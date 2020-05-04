@@ -52,3 +52,4 @@ int do_sizeOpt(char *str);//SIZE [FILENAME] [OPTION]
 int do_recoverOpt(char *str);
 int do_treeOpt(char *str);
 int do_helpOpt(char *str);
+
