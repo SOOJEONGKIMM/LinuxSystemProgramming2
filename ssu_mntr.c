@@ -309,13 +309,24 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
     struct tm *t;
     int i;
     FILE *fp;
-    strcpy(curdir,getcwd(NULL,0));//***절대경로 상대경로 입력시 모두 동작하도록 수정해야함
+    memset(trashdir,0,PATH_SIZE);
+    memset(filesdir,0,PATH_SIZE);
+    memset(infodir,0,PATH_SIZE);
+    memset(infotxt,0,PATH_SIZE);
+    memset(curdir,0,PATH_SIZE);
+    memset(checkdir,0,PATH_SIZE);
+    memset(fnamepath,0,PATH_SIZE);
+    memset(newdir,0,PATH_SIZE);
+    getcwd(curdir,PATH_SIZE);
+    //printf("onlyfname:%s\n",onlyfname);
+    //strcpy(curdir,getcwd(NULL,0));//***절대경로 상대경로 입력시 모두 동작하도록 수정해야함
     sprintf(checkdir,"%s/check",curdir);
     //strcpy(checkdir,getcwd(NULL,0));
-    //    printf("curdir:%s\n",curdir);
+    printf("curdir:%s\n",curdir);
+    printf("trashdir:%s\n",trashdir);
     printf("deloptI:%d\n",deloptI);
     if(chdir(checkdir)<0){//returns 0 if success
-	fprintf(stderr,"DIR:%s can't be found.\n",checkdir);
+	fprintf(stderr,"KDIR:%s can't be found.\n",checkdir);
 	perror("chdir");
 	exit(1);
     }
@@ -347,6 +358,9 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
     }
     else if(deloptI==0){
 	printf("entered here");
+	memset(trashdir,0,PATH_SIZE);
+	memset(filesdir,0,PATH_SIZE);
+	memset(infodir,0,PATH_SIZE);
 	//trash dir 이름을 지정해서 생성.
 	if(getcwd(trashdir,PATH_SIZE)==0){
 	    fprintf(stderr,"getcwd error to %s\n",trashdir);
@@ -357,7 +371,7 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	mkdir(trashdir,0744);
 	//trashdir로 이동
 	if(chdir(trashdir)<0){//returns 0 if success
-	    fprintf(stderr,"DIR:%s can't be found.\n",trashdir);
+	    fprintf(stderr,"PDIR:%s can't be found.\n",trashdir);
 	    perror("chdir");
 	    exit(1);
 	}
@@ -382,12 +396,12 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	if(chdir(trashdir)<0){//returns 0 if success
 	    fprintf(stderr,"DIR:%s can't be found.\n",trashdir);
 	    perror("chdir");
-	    exit(1);
+	    //exit(1);
 	}
 	//info dir 서브디렉토리로 생성  
 	if(getcwd(infodir,PATH_SIZE)==0){
 	    fprintf(stderr,"getcwd error to %s\n",infodir);
-	    exit(1);
+	    //exit(1);
 	}
 	sprintf(infodir,"%s/info",infodir);
 	mkdir(infodir,0744);
@@ -396,11 +410,11 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	sprintf(infotxt,"%s/%s",infodir,onlyfname);
 	if((fp=fopen(infotxt,"a"))<0){
 	    fprintf(stderr,"fopen error for %s\n",infotxt);
-	    exit(1);
+	    //exit(1);
 	}
 	if(stat(infotxt,&infobuf)<0){
 	    fprintf(stderr,"lstat error for %s\n",infotxt);
-	    exit(1);
+	    //exit(1);
 	}
 	fprintf(fp,"[Trash info]\n");
 	fprintf(fp,"%s\n",fnamepath);//지운 파일 절대경로 
@@ -412,6 +426,7 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 
 	fclose(fp);
     }
+    chdir(curdir);
 
 
 
@@ -433,11 +448,13 @@ int do_recoverOpt(char *str){
     char curdir[PATH_SIZE];
     char checkdir[PATH_SIZE];
     char fnamepath[PATH_SIZE];//deleting file name path
+    char temppath[PATH_SIZE];//for checking info dir file list
     char recopt[OPT_SIZE];
     //    char onlyfname[PATH_SIZE];//deleting file name
     char newdir[PATH_SIZE];//newdir path buf for 'files'dir
     struct stat statbuf;
     struct stat infobuf;
+    struct stat tempstat;
     // struct timeval *renamet;
     struct tm delt;
     struct tm *t;
@@ -445,6 +462,17 @@ int do_recoverOpt(char *str){
     pthread_t t_id;// thread id
     int i;
     int recoptl=1;//init
+    FILE *fp;//info dir의 파일들을 읽기 위해 
+    memset(trashdir,0,PATH_SIZE);
+    memset(filesdir,0,PATH_SIZE);
+    memset(infodir,0,PATH_SIZE);
+    memset(removeinfopath,0,PATH_SIZE);
+    memset(curdir,0,PATH_SIZE);
+    memset(checkdir,0,PATH_SIZE);
+    memset(fnamepath,0,PATH_SIZE);
+    memset(temppath,0,PATH_SIZE);
+    memset(recopt,0,OPT_SIZE);
+    memset(newdir,0,PATH_SIZE);
 
     int len=strlen(str);
     //trim option cmd part
@@ -504,6 +532,7 @@ int do_recoverOpt(char *str){
       exit(1);
       }*/
     //l option이 있다면 먼저 l option처리해줌.
+    //"trash"디렉토리 밑에 있는 파일과 삭제 시간들을 삭제 시간이 오래된 순으로 출력후, 명령어진행.
     if(recoptl==1){
 	int countdirp=0;
 	struct dirent **flist;
@@ -519,102 +548,162 @@ int do_recoverOpt(char *str){
 	}
 	printf("COUNT:%d\n",countdirp);
 	i=0;
+	//info dir의 파일이름, 삭제시간, 수정시간 각 노드 만들어주기
 	while(i<countdirp){
 	    printf("counting file num in info dir..\n");
-
-
-	    /*
-	       for(int i=0;i<countdirp;i++){
-	       struct stat fstat;
-	       if(!strcmp(flist[i]->d_name,"."))||(!strcmp(flist[i]->d_name,".."))
-	       continue;
-	       lstat(items
-	       newNode->t_id=t_id;
-	       memset((char*)newNode->filesdir,0,PATH_SIZE);
-	       newNode->dtime=dtime;*/
-	    //while(count>0)
-
-
-	    //	printf("recoptl:%d\n",recoptl);
-
-	    //"trash"디렉토리 밑에 있는 파일과 삭제 시간들을 삭제 시간이 오래된 순으로 출력후, 명령어진행.
+	    if(!strcmp(flist[i]->d_name,".")||!strcmp(flist[i]->d_name,"..")){
+		i++;
+		continue;
+	    }
+	    //pthread_t new_id;
+	    memset(temppath,0,PATH_SIZE);
+	    if(realpath(flist[i]->d_name,temppath)==0){
+		fprintf(stderr,"real path error for %s\n",flist[i]->d_name);
+		exit(1);
+	    }
+	    if(lstat(temppath,&tempstat)<0){
+		fprintf(stderr,"lstat error for %s\n",temppath);
+		exit(1);
+	    }
+	    /*if(S_ISDIR(tempstat.st_mode)){//info dir에 디렉토리가 존재할리는 없지만..
+	      if(!get_dirfile(temppath,newNode))
+	      exit(1);
+	      chdir(infodir);
+	      }*/
+	    if(S_ISREG(tempstat.st_mode)){
+		Node *node=(Node*)malloc(sizeof(Node));
+		memset(node,0,sizeof(node));
+		strcpy(node->listfpath,temppath);
+		//	node->t_id=new_id;
+		node->mtime=newNode->mtime;
+		node->dtime=newNode->dtime;//or tempstat.st_mtime????
+		list_insert(node);
+	    }
+	    else{
+		fprintf(stderr,"%s is not a regular file.\n",flist[i]->d_name);
+		exit(1);
+	    }
+	    i++;
+	    printf("flist[i]->d_name:%s\n",flist[i]->d_name);
+	    printf("listfpath:%s\n",newNode->listfpath);
+	    printf("mtime:%d\n",newNode->mtime);
+	    printf("dtime:%d\n",newNode->dtime);
 	}
-	}
-	//trashdir로 이동
-	if(chdir(filesdir)<0){//returns 0 if success
-	    fprintf(stderr,"DIR:%s can't be found.\n",filesdir);
-	    perror("chdir");
-	}
-	//l option이 있다면 먼저 l option처리해줌.
-	//해당파일이 없거나 파일의 복구 경로가 없다면 에러처리 후 프롬프트 전환 
-	if(access(onlyfname,F_OK)!=0){
-	    printf("There is no %s in the 'trash' directory\n",onlyfname);
-	    ssu_mntr_play();
-	}
-	memset(fnamepath,0,PATH_SIZE);
-	//복구파일의 절대경로 가져옴
-	if(realpath(onlyfname,fnamepath)==NULL){
-	    printf("There is no %s in the 'trash' directory\n",onlyfname);
-	    ssu_mntr_play();
-	}
-	//입력받은 파일이 정상적으로 존재하는 파일인지 확인
-	if(lstat(fnamepath,&statbuf)<0){
-	    fprintf(stderr,"lstat error for %s\n",fnamepath);
-	    exit(1);
-	}
-	if(!S_ISREG(statbuf.st_mode)){
-	    fprintf(stderr,"stat error for %s, not a regular file\n",fnamepath);
-	    exit(1);
-	} 
-	if(chdir(checkdir)<0){//returns 0 if success
-	    fprintf(stderr,"DIR:%s can't be found.\n",checkdir);
-	    perror("chdir");
-	    exit(1);
-	}
-	sprintf(newdir,"%s/%s",checkdir,onlyfname);
-	//"trash"디렉토리 안에 있는 파일을 원래 경로로 복구.
-	if(rename(fnamepath,newdir)<0){
-	    fprintf(stderr,"rename error for %s to %s\n",fnamepath,checkdir);
-	}
-	//"info"디렉토리 안에 있는 파일은 삭제해줌.
-	if(chdir(infodir)<0){
-	    fprintf(stderr,"infodir:%s can't be found.\n",infodir);
-	    perror("chdir");
-	}
-	sprintf(removeinfopath,"%s/%s",infodir,onlyfname);
-	int delinfo=remove(removeinfopath);
-	if(delinfo==0)
-	    printf("infodir:%s deleted.\n",removeinfopath);
-	else
-	    printf("%s failed to delete .\n",removeinfopath);
 
 
-	////////////////////////////////////////////////////////////////////
 
 
-	/*
-	   fprintf(fp,"%s\n",fnamepath);//지운 파일 절대경로 
-	//파일 삭제 시간
-	fprintf(fp,"D : %04d-%02d-%02d %02d:%02d:%02d\n", delt.tm_year+1900,delt.tm_mon+1,delt.tm_mday,delt.tm_hour,delt.tm_min,delt.tm_sec);
-	//파일 최종 수정시간
-	t=localtime(&infobuf.st_mtime);
-	fprintf(fp,"M : %04d-%02d-%02d %02d:%02d:%02d\n", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-
-	fclose(fp);*/
 
 
-	return 0;
+    }
+    /*
+       for(int i=0;i<countdirp;i++){
+       struct stat fstat;
+       if(!strcmp(flist[i]->d_name,"."))||(!strcmp(flist[i]->d_name,".."))
+       continue;
+       lstat(items
+       newNode->t_id=t_id;
+       memset((char*)newNode->filesdir,0,PATH_SIZE);
+       newNode->dtime=dtime;*/
+
+
+
+//trashdir로 이동
+if(chdir(filesdir)<0){//returns 0 if success
+    fprintf(stderr,"DIR:%s can't be found.\n",filesdir);
+    perror("chdir");
+}
+//l option이 있다면 먼저 l option처리해줌.
+//해당파일이 없거나 파일의 복구 경로가 없다면 에러처리 후 프롬프트 전환 
+if(access(onlyfname,F_OK)!=0){
+    printf("There is no %s in the 'trash' directory\n",onlyfname);
+    chdir(curdir);
+    ssu_mntr_play();
+}
+memset(fnamepath,0,PATH_SIZE);
+//복구파일의 절대경로 가져옴
+if(realpath(onlyfname,fnamepath)==NULL){
+    printf("There is no %s in the 'trash' directory\n",onlyfname);
+    exit(1);
+}
+//입력받은 파일이 정상적으로 존재하는 파일인지 확인
+if(lstat(fnamepath,&statbuf)<0){
+    fprintf(stderr,"lstat error for %s\n",fnamepath);
+    exit(1);
+}
+if(!S_ISREG(statbuf.st_mode)){
+    fprintf(stderr,"stat error for %s, not a regular file\n",fnamepath);
+    exit(1);
+} 
+if(chdir(checkdir)<0){//returns 0 if success
+    fprintf(stderr,"DIR:%s can't be found.\n",checkdir);
+    perror("chdir");
+    exit(1);
+}
+sprintf(newdir,"%s/%s",checkdir,onlyfname);
+//"trash"디렉토리 안에 있는 파일을 원래 경로로 복구.
+if(rename(fnamepath,newdir)<0){
+    fprintf(stderr,"rename error for %s to %s\n",fnamepath,checkdir);
+}
+//"info"디렉토리 안에 있는 파일은 삭제해줌.
+if(chdir(infodir)<0){
+    fprintf(stderr,"infodir:%s can't be found.\n",infodir);
+    perror("chdir");
+}
+sprintf(removeinfopath,"%s/%s",infodir,onlyfname);
+int delinfo=remove(removeinfopath);
+if(delinfo==0)
+    printf("infodir:%s deleted.\n",removeinfopath);
+    else
+    printf("%s failed to delete .\n",removeinfopath);
+
+
+    ////////////////////////////////////////////////////////////////////
+
+
+    /*
+       fprintf(fp,"%s\n",fnamepath);//지운 파일 절대경로 
+    //파일 삭제 시간
+    fprintf(fp,"D : %04d-%02d-%02d %02d:%02d:%02d\n", delt.tm_year+1900,delt.tm_mon+1,delt.tm_mday,delt.tm_hour,delt.tm_min,delt.tm_sec);
+    //파일 최종 수정시간
+    t=localtime(&infobuf.st_mtime);
+    fprintf(fp,"M : %04d-%02d-%02d %02d:%02d:%02d\n", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
+
+    fclose(fp);*/
+
+    printf("Hcurdir:%s\n",curdir);
+
+    chdir(curdir);
+    return 0;
     }
 
-    int do_treeOpt(char *str){
-	printf("treeopt");
+int do_treeOpt(char *str){
+    printf("treeopt");
 
-	return 0;
+    return 0;
+}
+
+int do_helpOpt(char *str){
+
+    printf("helpopt");
+    return 0;
+}
+void list_insert(Node *newNode){//list에 node추가
+    newNode->next=NULL;
+    if(head==NULL)
+	head=newNode;
+    else{
+	Node *listF;
+	listF=head;
+	while(listF->next!=NULL)
+	    listF=listF->next;
+	listF->next=newNode;
     }
+}
 
-    int do_helpOpt(char *str){
+int list_compare(char *onlyfname){
 
-	printf("helpopt");
-	return 0;
-    }
+
+
+}
 
