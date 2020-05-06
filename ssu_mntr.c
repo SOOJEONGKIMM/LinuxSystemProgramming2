@@ -552,7 +552,6 @@ int do_recoverOpt(char *str){
 	i++;
     if(i>=len){//[OPTION]주어지지않은경우
 	recoptl=0;
-	//	printf("recoptl:%d\n",recoptl);
     }
     if(recoptl==1){
 	recoptl=0;
@@ -563,7 +562,7 @@ int do_recoverOpt(char *str){
 	    a++;
 	    i++;
 	}
-	//	printf("recopt:%s\n",recopt);
+
 	i=j;
 	if(!strcmp(recopt,"-l")){
 	    recoptl=1;
@@ -580,11 +579,6 @@ int do_recoverOpt(char *str){
     sprintf(checkdir,"%s/check",curdir);
     sprintf(filesdir,"%s/trash/files",curdir);
     sprintf(infodir,"%s/trash/info",curdir);
-    /*trash dir 이름을 지정해서 생성.
-      if(getcwd(filesdir,PATH_SIZE)==0){
-      fprintf(stderr,"getcwd error to %s\n",filesdir);
-      exit(1);
-      }*/
     chdir(curdir);
     scanningTdir(infodir);
     chdir(curdir);
@@ -593,7 +587,6 @@ int do_recoverOpt(char *str){
     //l option이 있다면 먼저 l option처리해줌.
     //"trash"디렉토리 밑에 있는 파일과 삭제 시간들을 삭제 시간이 오래된 순으로 출력후, 명령어진행.
     if(recoptl==1){
-	printf("working on l option..");
 
 	int sort[TM_SIZE];
 	Node *printoptl=(Node*)malloc(sizeof(Node));
@@ -601,72 +594,20 @@ int do_recoverOpt(char *str){
 	printoptl=head;
 	i=0;
 
-	/*
-	while(printoptl){
-	    if(printoptl->optldt > printoptl->next->optldt){
-		printf("SSS: %d %d\n",printoptl->optldt, printoptl->next->optldt);
-		printoptl->next->optldt=printoptl->optldt;
-		printf("SSS: %d %d\n",printoptl->optldt, printoptl->next->optldt);
-	    }
-	    printoptl=printoptl->next;
-	}
-	*/
-	/*
-	while(printoptl){
-	    if(printoptl->optldt!=0){
-		printf("OPTLDT:%d",printoptl->optldt);
-		sort[i]=printoptl->optldt;
-		i++;
-		list_sort(printoptl->optldt);
-	    }
-	    printoptl=printoptl->next;
-	}
-	Node *cur,*newnode;
-	cur=head;
-	newnode->optldt=cur->optldt;
-	if(cur==NULL)
-	    cur=cur->next;
-	else{
-	    while(cur->next!=NULL){
-		if(cur->next->optldt > cur->optldt){
-		    newnode->next=cur->next;
-		    cur->next=newnode;
-		    printf("%d, %s %s",cur->optldt, cur->listfname, cur->dtime);
-		}
-		cur=cur->next;
-	    }
-	} 
-	*/
-	
-
-	//list_print();
-
 	list_sort(optldt_cmp);
 
-	//list_print();
-
-
-	/*
-	   int temp=0;;
-	   int k;
-	   i=k;
-	   while(i>0){
-	   for(int j=0;j<i-1;j++){
-	   if(sort[j]>sort[j+1]){
-	   temp=sort[j];
-	   sort[j]=sort[j+1];
-	   printf("[%d]",sort[j]);
-	   sort[j+1]=temp;
-	   }
-	   }
-	   i--;
-	   }
-	   while(k>0){
-	   printf("[%d]",sort[k]);
-	   k--;
-	   }
-	   */
-	list_print();
+	Node *cur;
+	cur=head;
+	int i=0;
+	int lindex=1;
+	while(cur->next!=NULL){
+	    if(cur->listfname!=NULL&&cur->dtime!=NULL && cur->optldt!=0){
+		printf("%d.%s    %s",lindex, cur->listfname, cur->dtime);
+		lindex++;
+	    }
+	    cur=cur->next;
+	}
+	printf("%d.%s     %s\n",lindex,cur->listfname, cur->dtime);
 
     }
     //trash dir스캔해서 입력파일과 동일한 이름이 있는지 확인
@@ -678,14 +619,7 @@ int do_recoverOpt(char *str){
     char duponlyfname[PATH_SIZE];
     char dupindexpick[OPT_SIZE];
     int dupindex=1;
-    /*while(printdup){
-      if(!strcmp(printdup->listfname,onlyfname)){
-      printf("overlapped\n");
-      overlapped=1;
-    //printdup->dupindex=dupindex;//중복횟수 셈
-    }
-    printdup=printdup->next;
-    }*/
+
     char* ptr;
     char* ptrdup;
     printdup=head;
@@ -801,22 +735,11 @@ int do_recoverOpt(char *str){
 	printf("%s failed to delete .\n",removeinfopath);
 
 
-    ////////////////////////////////////////////////////////////////////
-
-
-    /*
-       fprintf(fp,"%s\n",fnamepath);//지운 파일 절대경로 
-    //파일 삭제 시간
-    fprintf(fp,"D : %04d-%02d-%02d %02d:%02d:%02d\n", delt.tm_year+1900,delt.tm_mon+1,delt.tm_mday,delt.tm_hour,delt.tm_min,delt.tm_sec);
-    //파일 최종 수정시간
-    t=localtime(&infobuf.st_mtime);
-    fprintf(fp,"M : %04d-%02d-%02d %02d:%02d:%02d\n", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-
-    fclose(fp);*/
-
-    printf("Hcurdir:%s\n",curdir);
-
     chdir(curdir);
+
+    printf("before returning RECOVER: curdir:%s\n",curdir);
+
+
     return 0;
 }
 
@@ -881,7 +804,8 @@ void scanningTdir(char *searchdir){
     int countdirp=0;
     struct dirent **flist;
     int l=0;int k=0;
-    char optldtime[TM_SIZE];
+    char *optldtime;
+    optldtime=(char*)malloc(sizeof(char)*TM_SIZE);
     int optldtimeInt;
     int optldt;
     //infodir로 이동
@@ -942,8 +866,8 @@ void scanningTdir(char *searchdir){
 	    l=k=0;
 	    optldtimeInt=0;
 	    optldt=0;
-	    memset(optldtime,0,TM_SIZE);
-
+	    memset((char*)optldtime,0,TM_SIZE);
+//D : 2020-05-05 09:47:16
 	    while(l<strlen(dtime) && dtime[l]==' ')
 		l++;
 	    while(l<strlen(dtime) && dtime[l]=='D')
@@ -954,27 +878,47 @@ void scanningTdir(char *searchdir){
 		l++;
 	    while(l<strlen(dtime) && dtime[l]==' ')
 		l++;
-	    l+=10;//2020-05-05 skip 
+	    /*
+	    for(k=0;l<strlen(dtime) && dtime[l]!='-';l++){//2020
+		optldtime[k]=dtime[l];
+		k++;
+	    }*/
+	    l+=4;
+	    while(l<strlen(dtime) && dtime[l]=='-')//-
+		l++;
+	    for(;l<strlen(dtime) && dtime[l]!='-';l++){//05
+		optldtime[k]=dtime[l];
+		k++;
+	    }
+	    while(l<strlen(dtime) && dtime[l]=='-')//-
+		l++;
+	    for(;l<strlen(dtime) && dtime[l]!=' ';l++){//05
+		optldtime[k]=dtime[l];
+		k++;
+	    }
 	    while(l<strlen(dtime) && dtime[l]==' ')
 		l++;
-	    for(k=0;l<strlen(dtime) && dtime[l]!=':';l++){
-		optldtime[k]=dtime[l];
-		//printf("optldtimeInt:%d\n",optldtimeInt[k]);
-		k++;
-	    }
-	    while(l<strlen(dtime) && dtime[l]==':')
-		l++;
-	    for(;l<strlen(dtime) && dtime[l]!=':';l++){
+	    for(;l<strlen(dtime) && dtime[l]!=':';l++){//09
 		optldtime[k]=dtime[l];
 		k++;
 	    }
 	    while(l<strlen(dtime) && dtime[l]==':')
 		l++;
-	    for(;l<strlen(dtime) && dtime[l]!=':';l++){
+	    for(;l<strlen(dtime) && dtime[l]!=':';l++){//47
 		optldtime[k]=dtime[l];
 		k++;
 	    }
+	    while(l<strlen(dtime) && dtime[l]==':')
+		l++;
+	    for(;l<strlen(dtime) && dtime[l]!=':';l++){//16
+		optldtime[k]=dtime[l];
+		k++;
+	    }
+		printf("/////////debug:%s\n",optldtime);
+	    int test=atoi(optldtime);
+		printf("////////INT/debug:%d\n",test);
 	    optldtimeInt=atoi(optldtime);
+		printf("////////INT/debug:%d\n",optldtimeInt);
 	    ///////////////////////////////////////////////
 	    optldt=0;
 	    memset(node->listfname,0,PATH_SIZE);
@@ -1165,8 +1109,6 @@ void Clist_insert(CNode *newNode){//list에 node추가
 }
 
 void swap_node_data(Node *list1, Node *list2) {
-
-    //char filesdir[PATH_SIZE];
     char listfpath[PATH_SIZE];
     char listfname[PATH_SIZE];
     char dtime[TM_SIZE];
@@ -1175,7 +1117,6 @@ void swap_node_data(Node *list1, Node *list2) {
     char dupped[TM_SIZE];//info정보에 그다음내용이 있다면 중복파일이라는 걸 확인 위해
     int optldt;
     List *head;
-
 
     //tmp
     strcpy(listfpath, list2->listfpath);
@@ -1187,7 +1128,6 @@ void swap_node_data(Node *list1, Node *list2) {
     optldt = list2->optldt;
     head = list2->head;
 
-
     strcpy(list2->listfpath, list1->listfpath);
     strcpy(list2->listfname, list1->listfname);
     strcpy(list2->dtime, list1->dtime);
@@ -1196,7 +1136,6 @@ void swap_node_data(Node *list1, Node *list2) {
     list2->dupindex = list1->dupindex;
     list2->optldt = list1->optldt;
     list2->head = list1->head;
-
 
     strcpy(list1->listfpath, listfpath);
     strcpy(list1->listfname, listfname);
@@ -1208,37 +1147,37 @@ void swap_node_data(Node *list1, Node *list2) {
     list1->head = head;
 }
 
-/*
-int str_cmp(Node *a, Node *b) {
-    return strcmp(a->str, b->str)
-}
-*/
+/*for SIZE option
+   int str_cmp(Node *a, Node *b) {
+   return strcmp(a->str, b->str)
+   }
+   */
 
 void list_sort(int (*cmp)()){
 
-	int is_swapped;
+    int is_swapped;
 
-	Node *list_ptr;
-	Node *last_ptr;
+    Node *list_ptr;
+    Node *last_ptr;
 
-	last_ptr = 0;
+    last_ptr = 0;
 
-	if (head != NULL) {
-	    while(1) {
-		is_swapped = 0;
-		list_ptr = head;
-		while (list_ptr->next != last_ptr) {
+    if (head != NULL) {
+	while(1) {
+	    is_swapped = 0;
+	    list_ptr = head;
+	    while (list_ptr->next != last_ptr) {
 
-		    if (cmp(list_ptr, list_ptr->next) > 0) {
-			swap_node_data(list_ptr, list_ptr->next);
-		    }
-		    list_ptr = list_ptr->next;
+		if (cmp(list_ptr, list_ptr->next) > 0) {
+		    swap_node_data(list_ptr, list_ptr->next);
 		}
-		if (!is_swapped)
-		    break;
-		last_ptr = list_ptr;
+		list_ptr = list_ptr->next;
 	    }
+	    if (!is_swapped)
+		break;
+	    last_ptr = list_ptr;
 	}
+    }
 }
 
 void list_print(){
@@ -1251,7 +1190,7 @@ void list_print(){
 	}
 	cur=cur->next;
     }
-     printf("%d, %s %s\n",cur->optldt,cur->listfname, cur->dtime);
+    printf("%d, %s %s\n",cur->optldt,cur->listfname, cur->dtime);
 }
 int list_compare(char *onlyfname){
 
