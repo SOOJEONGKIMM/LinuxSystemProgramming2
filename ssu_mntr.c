@@ -11,9 +11,6 @@ int invalidOpt=0;
 int deloptI=0;
 int deloptR=0;
 
-int optldt_cmp(Node *a, Node *b) {
-    return a->optldt - b->optldt;
-}
 
 void ssu_mntr_play(void){
     char cmdbuf[BUFFER_SIZE];
@@ -335,10 +332,8 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
     sprintf(infodir,"%s/trash/info",curdir);
     sprintf(filesdir,"%s/trash/files",curdir);
 
-    scanningTdir(infodir);
-    scanningTdir(filesdir);
-    chdir(curdir);
-    scanningCdir();
+    //scanningTdir(filesdir);
+   //scanningCdir();
 
     if(chdir(checkdir)<0){//returns 0 if success
 	fprintf(stderr,"KDIR:%s can't be found.\n",checkdir);
@@ -348,7 +343,8 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 
     if(access(onlyfname,F_OK)!=0){
 	printf("%s is not a existing file\n",onlyfname);
-	//ssu_mntr_play();
+	chdir(curdir);
+	ssu_mntr_play();
     }
     //삭제파일의 절대경로 가져옴
     if(realpath(onlyfname,fnamepath)==NULL){
@@ -364,6 +360,10 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	fprintf(stderr,"stat error for %s, not a regular file\n",fnamepath);
 	//exit(1);
     } 
+
+    scanningTdir(infodir);
+    chdir(curdir);
+
     //중복 체크
     //trash dir스캔해서 입력파일과 동일한 이름이 있는지 확인
     Node *printdup=(Node*)malloc(sizeof(Node));
@@ -481,6 +481,47 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 
 	fclose(fp);
     }
+    Node *infosize=(Node*)malloc(sizeof(infosize));
+    memset(infosize,0,sizeof(infosize));
+    infosize=head;
+    int infosizesum=0;
+
+    while(infosize){
+	infosizesum+=infosize->fsize;
+	printf("infosize fsize:%d\n",infosize->fsize);	
+	printf("infosizesum:%d\n",infosizesum);	
+	infosize=infosize->next;
+    }
+    char tmpdelfname[FILE_SIZE];
+    char tmpdelinfo[PATH_SIZE];
+    char tmpdelfiles[PATH_SIZE];
+    while(infosizesum>2*1024){
+	printf("from old files, delete info and files's file...");
+	Node *infodel=(Node*)malloc(sizeof(infodel));
+	memset(infodel,0,sizeof(infodel));
+	memset(tmpdelfname,0,FILE_SIZE);
+	memset(tmpdelinfo,0,PATH_SIZE);
+	memset(tmpdelfiles,0,PATH_SIZE);
+	infodel=head;
+	list_sort(optldt_cmp);//sort
+
+	list_print();//debug
+	memset(tmpdelfname,0,PATH_SIZE);
+	printf("theadd:%s\n",head->listfname);
+	strcpy(tmpdelfname,head->listfname);
+	chdir(infodir);
+	realpath(tmpdelfname,tmpdelinfo);
+	remove(tmpdelinfo);
+	chdir(filesdir);
+	realpath(tmpdelfname,tmpdelfiles);
+	remove(tmpdelfiles);
+
+	chdir(curdir);
+    }
+
+
+
+
     chdir(curdir);
 
 
@@ -513,7 +554,7 @@ int do_recoverOpt(char *str){
     char dtime[TM_SIZE];
     char skip1[TM_SIZE];
     char skip2[PATH_SIZE];
-    char listfname[PATH_SIZE];
+    char listfname[FILE_SIZE];
     int recoptl=1;//init
     FILE *fp;//info dir의 파일들을 읽기 위해 
     memset(trashdir,0,PATH_SIZE);
@@ -771,7 +812,8 @@ void scanningTdir(char *searchdir){
     struct stat infobuf;
     struct stat tempstat;
     // struct timeval *renamet;
-    struct tm delt;
+    int year, month, day, hour, min, sec;
+
     struct tm *t;
     Node *newNode;
     pthread_t t_id;// thread id
@@ -780,7 +822,7 @@ void scanningTdir(char *searchdir){
     char dtime[TM_SIZE];
     char skip1[TM_SIZE];
     char skip2[PATH_SIZE];
-    char listfname[PATH_SIZE];
+    char listfname[FILE_SIZE];
     int dupindex;
     int recoptl=1;//init
     FILE *fp;//info dir의 파일들을 읽기 위해 
@@ -808,6 +850,8 @@ void scanningTdir(char *searchdir){
     optldtime=(char*)malloc(sizeof(char)*TM_SIZE);
     int optldtimeInt;
     int optldt;
+    int fsize;//SIZE
+    struct stat buf;//SIZE
     //infodir로 이동
     if(chdir(searchdir)<0){//returns 0 if success
 	fprintf(stderr,"DIR:%s can't be found.\n",searchdir);
@@ -847,6 +891,7 @@ void scanningTdir(char *searchdir){
 	    if((fp=fopen(node->listfpath,"r+w"))<0){
 		fprintf(stderr,"fopen error for %s's %s\n",searchdir,node->listfpath);
 	    }
+	    fsize=0;
 	    memset(dtime,0,TM_SIZE);
 	    memset(mtime,0,TM_SIZE);
 	    while(1){
@@ -863,11 +908,13 @@ void scanningTdir(char *searchdir){
 	    }
 	    fclose(fp);
 	    ///////////////////////////////////////////////
+	    fsize=stat(node->listfpath,&buf);//SIZE 
 	    l=k=0;
 	    optldtimeInt=0;
 	    optldt=0;
 	    memset((char*)optldtime,0,TM_SIZE);
-//D : 2020-05-05 09:47:16
+	    //year=month=day=hour=min=sec=0;
+	    //D : 2020-05-05 09:47:16
 	    while(l<strlen(dtime) && dtime[l]==' ')
 		l++;
 	    while(l<strlen(dtime) && dtime[l]=='D')
@@ -878,11 +925,13 @@ void scanningTdir(char *searchdir){
 		l++;
 	    while(l<strlen(dtime) && dtime[l]==' ')
 		l++;
-	    /*
-	    for(k=0;l<strlen(dtime) && dtime[l]!='-';l++){//2020
+
+	    /*  for(k=0;l<strlen(dtime) && dtime[l]!='-';l++){//2020
 		optldtime[k]=dtime[l];
 		k++;
-	    }*/
+		}
+		year=atoi(optldtime);
+		optldtime=0;*/
 	    l+=4;
 	    while(l<strlen(dtime) && dtime[l]=='-')//-
 		l++;
@@ -890,44 +939,65 @@ void scanningTdir(char *searchdir){
 		optldtime[k]=dtime[l];
 		k++;
 	    }
+	    //  month=atoi(optldtime);
+	    //  optldtime=0;
 	    while(l<strlen(dtime) && dtime[l]=='-')//-
 		l++;
 	    for(;l<strlen(dtime) && dtime[l]!=' ';l++){//05
 		optldtime[k]=dtime[l];
 		k++;
 	    }
+	    //  day=atoi(optldtime);
+	    //  optldtime=0;
 	    while(l<strlen(dtime) && dtime[l]==' ')
 		l++;
 	    for(;l<strlen(dtime) && dtime[l]!=':';l++){//09
 		optldtime[k]=dtime[l];
 		k++;
 	    }
+	    // hour=atoi(optldtime);
+	    //  optldtime=0;
 	    while(l<strlen(dtime) && dtime[l]==':')
 		l++;
 	    for(;l<strlen(dtime) && dtime[l]!=':';l++){//47
 		optldtime[k]=dtime[l];
 		k++;
 	    }
+	    //  min=atoi(optldtime);
+	    //  optldtime=0;
 	    while(l<strlen(dtime) && dtime[l]==':')
 		l++;
 	    for(;l<strlen(dtime) && dtime[l]!=':';l++){//16
 		optldtime[k]=dtime[l];
 		k++;
 	    }
-		printf("/////////debug:%s\n",optldtime);
-	    int test=atoi(optldtime);
-		printf("////////INT/debug:%d\n",test);
+	    //   sec=atoi(optldtime);
+	    //  optldtime=0;
+	    //	    printf("/////////debug:%s\n",optldtime);
+	    //	    int test=atoi(optldtime);
+	    //	    printf("////////INT/debug:%d\n",test);
 	    optldtimeInt=atoi(optldtime);
-		printf("////////INT/debug:%d\n",optldtimeInt);
+	    printf("////////INT/debug:%d\n",optldtimeInt);
 	    ///////////////////////////////////////////////
+	    //year=year.tm_year+1900;
+	    /* node->delt.tm_year=year;
+	    //month=month.tm_mon+1;
+	    node->delt.tm_mon=month;
+	    //date=date.tm_date
+	    node->delt.tm_mday=day;
+	    node->delt.tm_hour=hour;
+	    node->delt.tm_min=min;
+	    node->delt.tm_sec=sec;*/
 	    optldt=0;
 	    memset(node->listfname,0,PATH_SIZE);
 	    memset(node->mtime,0,TM_SIZE);
 	    memset(node->dtime,0,TM_SIZE);
+	    node->fsize=0;
 	    node->optldt=optldtimeInt;
 	    strcpy(node->listfname,flist[i]->d_name);//filename only
 	    strcpy(node->mtime,mtime);//newNode->mtime;
 	    strcpy(node->dtime,dtime);
+	    node->fsize=buf.st_size;//SIZE
 	    //중복체크 
 	    dupindex=0;
 	    char dup1onlyfname[PATH_SIZE];
@@ -944,12 +1014,17 @@ void scanningTdir(char *searchdir){
 	    printf("flist[i]->d_name:%s\n",flist[i]->d_name);
 	    printf("listfpath:%s\n",node->listfpath);
 	    printf("optldt:%d\n",node->optldt);
+	    printf("fize(buf.st_size):%d\n",node->fsize);
 	    //printf("mtime:%s\n",node->mtime);
 	    //printf("dtime:%s\n",node->dtime);
 	    printf("dupindex:%d\n",node->dupindex);
 
-
-
+	    printf("node->delt.tm_year:%d\n",node->delt.tm_year);
+	    printf("node->delt.tm_mon:%d\n",node->delt.tm_mon);
+	    printf("node->delt.tm_mday:%d\n",node->delt.tm_mday);
+	    printf("node->delt.tm_hour:%d\n",node->delt.tm_hour);
+	    printf("node->delt.tm_min:%d\n",node->delt.tm_min);
+	    printf("node->delt.tm_min:%d\n",node->delt.tm_min);
 	}
 	else{
 	    fprintf(stderr,"%s is not a regular file.\n",flist[i]->d_name);
@@ -997,8 +1072,10 @@ void scanningCdir(void){
     char dtime[TM_SIZE];
     char skip1[TM_SIZE];
     char skip2[PATH_SIZE];
-    char listfname[PATH_SIZE];
+    char listfname[FILE_SIZE];
     int recoptl=1;//init
+    int fsize;//SIZE
+    struct stat buf;//SIZE
     FILE *fp;//info dir의 파일들을 읽기 위해 
     memset(trashdir,0,PATH_SIZE);
     memset(filesdir,0,PATH_SIZE);
@@ -1059,6 +1136,7 @@ void scanningCdir(void){
 	    if((fp=fopen(node->listfpath,"r+w"))<0){
 		fprintf(stderr,"fopen error for checkdir's %s\n",node->listfpath);
 	    }
+	    fsize=0;
 	    memset(dtime,0,TM_SIZE);
 	    memset(mtime,0,TM_SIZE);
 	    while(1){
@@ -1074,14 +1152,18 @@ void scanningCdir(void){
 		  }*/
 	    }
 	    fclose(fp);
+	    fsize=stat(node->listfpath,&buf);//SIZE 
 	    memset(node->mtime,0,TM_SIZE);
 	    memset(node->dtime,0,TM_SIZE);
 	    memset(node->listfname,0,PATH_SIZE);
+	    node->fsize=0;
+	    node->fsize=buf.st_size;//SIZE
 	    strcpy(node->mtime,mtime);//newNode->mtime;
 	    strcpy(node->dtime,dtime);
 	    strcpy(node->listfname,flist[i]->d_name);
 	    Clist_insert(node);
 	    printf("flist[i]->d_name:%s\n",flist[i]->d_name);
+	    printf("fize(buf.st_size):%d\n",node->fsize);
 	    printf("listfname:%s\n",listfname);
 	    printf("listfpath:%s\n",node->listfpath);
 	    printf("mtime:%s\n",node->mtime);
@@ -1110,7 +1192,7 @@ void Clist_insert(CNode *newNode){//list에 node추가
 
 void swap_node_data(Node *list1, Node *list2) {
     char listfpath[PATH_SIZE];
-    char listfname[PATH_SIZE];
+    char listfname[FILE_SIZE];
     char dtime[TM_SIZE];
     char mtime[TM_SIZE];
     int dupindex;
@@ -1146,12 +1228,15 @@ void swap_node_data(Node *list1, Node *list2) {
     list1->optldt = optldt;
     list1->head = head;
 }
+int optldt_cmp(Node *a, Node *b) {
+    return a->optldt - b->optldt;
+}
 
-/*for SIZE option
-   int str_cmp(Node *a, Node *b) {
-   return strcmp(a->str, b->str)
-   }
-   */
+//for SIZE option
+int str_cmp(Node *a, Node *b) {
+    return strcmp(a->listfname, b->listfname);
+}
+
 
 void list_sort(int (*cmp)()){
 
@@ -1186,11 +1271,11 @@ void list_print(){
     int i=0;
     while(cur->next!=NULL){
 	if(cur->listfname!=NULL&&cur->dtime!=NULL && cur->optldt!=0){
-	    printf("%d, %s %s",cur->optldt, cur->listfname, cur->dtime);
+	    printf("%s %s", cur->listfname, cur->dtime);
 	}
 	cur=cur->next;
     }
-    printf("%d, %s %s\n",cur->optldt,cur->listfname, cur->dtime);
+    printf("%s %s\n",cur->listfname, cur->dtime);
 }
 int list_compare(char *onlyfname){
 
