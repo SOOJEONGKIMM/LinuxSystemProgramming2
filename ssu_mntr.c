@@ -10,6 +10,7 @@ int invalidOpt=0;
 
 int deloptI=0;
 int deloptR=0;
+    int endtimeExist=0;
 
 
 void ssu_mntr_play(void){
@@ -120,7 +121,7 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
     struct tm delt;
     struct tm *t;
     int i;
-    int endtimeExist=1;
+  //  int endtimeExist=1;
     deloptI=deloptR=0;//init delopt
     FILE *fp;
 
@@ -256,7 +257,7 @@ void deloptR_alarm(int k){
     char recheckbuf[OPT_SIZE];
     printf("alarm ringing\n");
     //vfork 생성 (자식/부모프로세스에서 삭제작업 진행)
-    switch(pid=fork()){
+    switch(pid=vfork()){
 	case 0:
 	    printf("I'm child. My PID is %d\n",getpid());
 	    if(deloptR==1){//do_deleteOpt()호출 전 재확인 문구
@@ -344,6 +345,7 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
     if(access(onlyfname,F_OK)!=0){
 	printf("%s is not a existing file\n",onlyfname);
 	chdir(curdir);
+	endtimeExist=0;//init
 	ssu_mntr_play();
     }
     //삭제파일의 절대경로 가져옴
@@ -518,9 +520,13 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 
 	chdir(curdir);
     }
+    if(endtimeExist==1){
+	printf("Deletion has ended in setted [ENDTIME].\nPlease enter ENTERKEY twice.\n");
+    }
 
 
 
+	endtimeExist=0;//init
 
     chdir(curdir);
 
