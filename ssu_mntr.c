@@ -567,7 +567,7 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 	i++;
     }
     printf("onlyfname:%s",onlyfname);
-    
+
     i=j;
     //[OPTION] 추출 
     while(i<len && str[i]==' ')
@@ -579,7 +579,7 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
     char curdir[PATH_SIZE];
     memset(curdir,0,PATH_SIZE);
     strcpy(curdir,getcwd(NULL,0));
-memset((char*)fnamepath,0,PATH_SIZE);
+    memset((char*)fnamepath,0,PATH_SIZE);
     sprintf(fnamepath,"%s/%s",curdir,onlyfname);
     printf("fnamepath:%s\n",fnamepath);
 
@@ -619,24 +619,27 @@ memset((char*)fnamepath,0,PATH_SIZE);
 
     if(sizeoptd==0){
 
+	//파일을 입력받은 경우 여기에서 처리해준다. 
 	scanningCdir(NULL,0,ALL,1,curdir);//하위디렉토리까지 한번 스캔해서 리스트에 정보받아옴.
+    list_sortC(str_cmp);
 	CNode *fnode=(CNode*)malloc(sizeof(CNode));
 	memset(fnode,0,sizeof(fnode));
 	fnode=chead;
 	while(fnode){
+//	    printf("debug: %s\n",fnode->listfname);
 	    if(!strcmp(fnode->listfpath,fnamepath)){
-lstat(fnode->listfpath,&fbuf);
-	if(!S_ISDIR(fbuf.st_mode)){
-		memset(relativeP,0,PATH_SIZE);
-		makeRelativeP(fnode->listfpath,relativeP,curdir);
-		printf("%d     .%s\n",fnode->fsize,relativeP);
+		lstat(fnode->listfpath,&fbuf);
+		if(!S_ISDIR(fbuf.st_mode)){
+		    memset(relativeP,0,PATH_SIZE);
+		    makeRelativeP(fnode->listfpath,relativeP,curdir);
+		    printf("%d     .%s\n",fnode->fsize,relativeP);
 
-		return 0;
-}
+		    return 0;
+		}
 	    }
 	    fnode=fnode->next;
 	}
-chdir(curdir);
+	chdir(curdir);
 	scanningCdir(onlyfname,0,ONLYDIR,1,curdir);
     }
     int sizesum=0;
@@ -646,7 +649,7 @@ chdir(curdir);
     sizenode=chead;
 
 
-    list_sortC(str_cmp);
+    //list_sortC(str_cmp);
 
     while(sizenode){
 
@@ -1253,7 +1256,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
     char searchdirbuf[PATH_SIZE];
     static int indent;
     if(indentinit==1){
-	indent=0;
+	indent=0;//처음으로 스캔시작할때만 초기화되도록 
     }
     // char fnamepath[PATH_SIZE];
     char temppath[PATH_SIZE];
@@ -1262,7 +1265,6 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
     //struct stat statbuf;    
     struct stat tempstat;
     // struct timeval *renamet;    
-    //  CNode *newNode;    
     int i;   
     char listfname[FILE_SIZE];
     int recoptl=1;//init
@@ -1272,31 +1274,25 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
     //  memset(fnamepath,0,PATH_SIZE);
     memset(temppath,0,PATH_SIZE); 
-    //   newNode=(CNode*)malloc(sizeof(CNode));
 
-    strcpy(curdir,getcwd(NULL,0));//***절대경로 상대경로 입력시 모두 동작하도록 수정해야함
+    strcpy(curdir,getcwd(NULL,0));
     //printf("-------------------------scanning dir for CNode list\n");
     printf("curdir:%s\n",curdir);
 
 
     memset(searchdirbuf,0,PATH_SIZE);
-if(searchdir==NULL)
-strcpy(searchdirbuf,curdir);
-else
-    sprintf(searchdirbuf,"%s/%s",curdir,searchdir);
-    //realpath(searchdirbuf,searchdirbuf);
+    if(searchdir==NULL)
+	strcpy(searchdirbuf,curdir);
+    else
+	sprintf(searchdirbuf,"%s/%s",curdir,searchdir);
 
     int countdirp=0;
     struct dirent **flist;
 
-
-    //infodir로 이동
     if(chdir(searchdirbuf)<0){//returns 0 if success
 	fprintf(stderr,"DIR:%s can't be found.\n",searchdirbuf);
 	perror("chdir");
     }
-
-
     if((countdirp=scandir(searchdirbuf,&flist,0,alphasort))<0){
 	fprintf(stderr,"scandir error for %s\n",searchdirbuf);
 	exit(1);
@@ -1309,7 +1305,7 @@ else
 	memset(node,0,sizeof(node));
 	memset(node->listfname,0,PATH_SIZE);
 	strcpy(node->listfname,flist[i]->d_name);
-	list_sortC(str_cmp);
+//	list_sortC(str_cmp);
 	//printf("counting file num in %s dir..\n",searchdirbuf);
 	//printf("node->listfname:%s\n",node->listfname);
 	if(!strcmp(flist[i]->d_name,".")||!strcmp(flist[i]->d_name,"..")){
@@ -1345,7 +1341,7 @@ else
 
 	    //  memset(newNode->listfpath,0,PATH_SIZE);
 	    strcpy(node->listfpath,temppath);
-	    list_sortC(str_cmp);
+	    //list_sortC(str_cmp);
 	    fsize=0;
 	    fsize=stat(node->listfpath,&buf);//SIZE 
 
@@ -1389,14 +1385,14 @@ else
 		    scanningCdir(flist[i]->d_name,depth,DEPTHEXIST,0,delcurdir);
 		}
 	    }
-if(sizeoptflag==ALL){//하위 디렉토리 끝까지 가는 경우 
-indent++;
-//printf("current DEPTH:%d, indent:%d\n",depth,indent);
-		 
-		    //printf("~~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
+	    if(sizeoptflag==ALL){//하위 디렉토리 끝까지 가는 경우 
+		indent++;
+		//printf("current DEPTH:%d, indent:%d\n",depth,indent);
 
-		    scanningCdir(flist[i]->d_name,depth,ALL,0,delcurdir);
-}
+		//printf("~~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
+
+		scanningCdir(flist[i]->d_name,depth,ALL,0,delcurdir);
+	    }
 
 	    /*if(sizeoptflag==1&&depthopt==0){
 	      if(indent<(depth-1)||depth==0){
@@ -1415,7 +1411,7 @@ indent++;
     }
     indent--;
     chdir("..");
-   // printf("-------------------------scanning dir for CNode list ends\n");
+    // printf("-------------------------scanning dir for CNode list ends\n");
 }
 void Clist_insert(CNode *newNode){//list에 node추가
     newNode->next=NULL;
@@ -1430,25 +1426,33 @@ void Clist_insert(CNode *newNode){//list에 node추가
     }
 }
 void swap_Cnode_data(CNode *list1, CNode *list2){
+    //char dtime[TM_SIZE];
+    //char mtime[TM_SIZE];
+    //int dupindex;
+    //char dupped[TM_SIZE];//info정보에 그다음내용이 있다면 중복파일이라는 걸 확인 위해
+    int fsize;
+    CList *chead;
+
     char relP[PATH_SIZE];
     char listfpath[PATH_SIZE];
     char listfname[FILE_SIZE];
 
-    CList *chead;
-
     strcpy(listfpath, list2->listfpath);
     strcpy(listfname, list2->listfname);
     strcpy(relP, list2->relP);
+    fsize=list2->fsize;
     chead = list2->chead;
 
     strcpy(list2->listfpath, list1->listfpath);
     strcpy(list2->listfname, list1->listfname);
     strcpy(list2->relP, list1->relP);
+    list2->fsize= list1->fsize;
     list2->chead = list1->chead;
 
     strcpy(list1->listfpath, listfpath);
     strcpy(list1->listfname, listfname);
     strcpy(list1->relP, relP);
+    list1->fsize=fsize;
     list1->chead = chead;
     printf("list1:%s,list2:%s\n",list1->listfname,list2->listfname);
 }
