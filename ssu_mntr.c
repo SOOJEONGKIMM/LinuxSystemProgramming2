@@ -626,7 +626,7 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 	memset(fnode,0,sizeof(fnode));
 	fnode=chead;
 	while(fnode){
-//	    printf("debug: %s\n",fnode->listfname);
+	  //  printf("debug:%d    %s\n",fnode->fsize,fnode->relP);
 	    if(!strcmp(fnode->listfpath,fnamepath)){
 		lstat(fnode->listfpath,&fbuf);
 		if(!S_ISDIR(fbuf.st_mode)){
@@ -1353,13 +1353,10 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 	    //printf("fize(buf.st_size):%d\n",node->fsize);
 	    //printf("listfname:%s\n",node->listfname);
 	    //printf("listfpath:%s\n",node->listfpath);
-	    if(sizeoptflag==DEPTHEXIST){
 		memset(relativepath,0,PATH_SIZE);	
 		makeRelativeP(node->listfpath,relativepath,delcurdir);
 		memset(node->relP,0,PATH_SIZE);
 		strcpy(node->relP,relativepath);
-		//printf("%d     .%s\n",node->fsize,relativepath);
-	    }
 
 	}
 	if((tempstat.st_mode&S_IFDIR)==S_IFDIR){
@@ -1502,8 +1499,8 @@ int optldt_cmp(Node *a, Node *b) {
 }
 
 //for SIZE option
-int str_cmp(Node *a, Node *b) {
-    return strcmp(a->listfname, b->listfname);
+int str_cmp(CNode *a, CNode *b) {
+    return strcmp(a->relP, b->relP);
 }
 
 void list_sortC(int (*cmp)()){
