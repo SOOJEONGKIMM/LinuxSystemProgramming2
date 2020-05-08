@@ -566,7 +566,7 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 	a++;
 	i++;
     }
-    printf("onlyfname:%s",onlyfname);
+    //printf("onlyfname:%s",onlyfname);
 
     i=j;
     //[OPTION] 추출 
@@ -581,7 +581,7 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
     strcpy(curdir,getcwd(NULL,0));
     memset((char*)fnamepath,0,PATH_SIZE);
     sprintf(fnamepath,"%s/%s",curdir,onlyfname);
-    printf("fnamepath:%s\n",fnamepath);
+    //printf("fnamepath:%s\n",fnamepath);
 
     if(sizeoptd==1){
 	sizeoptd=0;
@@ -592,7 +592,6 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 	    a++;
 	    i++;
 	}
-	printf("sizeopt:%s\n",sizeopt);
 	i=j;
 	if(!strcmp(sizeopt,"-d")){
 	    sizeoptd=1;
@@ -605,7 +604,6 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 		a++;
 		i++;
 	    }
-	    printf("depthbuf:%s\n",depthbuf);
 	    depth=atoi(depthbuf);
 	    //depth=depth-1;//check -d 2이면 ./check/1.c
 	}
@@ -653,13 +651,8 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 
     while(sizenode){
 
-	/*if(access(sizenode->listfname,0)!=0){
-	  fprintf(stderr,"error: %s doesn't exist.\n",onlyfname);
-	  exit(1);
-	  }*/
 	if(lstat(sizenode->listfname,&statbuf)>0){
 	    fprintf(stderr,"lstat error\n");
-	    //continue;
 	}
 
 	memset(relativeP,0,PATH_SIZE);
@@ -1385,8 +1378,10 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
 	    //depth만큼만 하부 디렉토리 검색을 한다.
 	    if(sizeoptflag==ONLYDIR){
-		if(depth==0)
+		if(depth==0){
 		    indent++;
+		    scanningCdir(flist[i]->d_name,depth,ALL,0,delcurdir);
+		}
 	    }
 	    if(sizeoptflag==DEPTHEXIST){//deo
 		if((indent<(depth-1))&&depth!=0){
@@ -1399,37 +1394,37 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 	    if(sizeoptflag==ALL||sizeoptflag==TREE){//하위 디렉토리 끝까지 가는 경우 
 		indent++;
 		strcpy(node->listfpath,temppath);
-		memset(treefname,0,PATH_SIZE);
-		sprintf(treefname,"-%s",node->listfname);
-		int    file_count = 0;//[TREE]빈디렉토리라면 dir--------출력을 오른쪽에 해줘서는 안됨.
-		struct dirent *dir_ent;
-		DIR  *dp;
-		dp=opendir(node->listfpath);
-		while ((dir_ent = readdir(dp)) != NULL)
-		{
-		    if (strcmp(dir_ent->d_name, ".") == 0 || strcmp(dir_ent->d_name, "..") == 0)
-			continue;
-
-		    ++file_count;
-		}
-		emptydir=lstat(node->listfpath,&checkemptybuf);
-		//printf("PP%d",emptydir);
-		if(file_count>0){
-		    for(int i=0;i<14-strlen(node->listfname);i++){
-			sprintf(treefname,"%s-",treefname);
-		    }
-		    printf("|%-15s",treefname);
-		}
-		else//empty dir 
-		    printf("|%-15s\n",treefname);
-
-		fcnt--;
 
 		//printf("~~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
 
 		if(sizeoptflag==ALL)
 		    scanningCdir(flist[i]->d_name,depth,ALL,0,delcurdir);
 		else if(sizeoptflag==TREE){
+		    memset(treefname,0,PATH_SIZE);
+		    sprintf(treefname,"-%s",node->listfname);
+		    int    file_count = 0;//[TREE]빈디렉토리라면 dir--------출력을 오른쪽에 해줘서는 안됨.
+		    struct dirent *dir_ent;
+		    DIR  *dp;
+		    dp=opendir(node->listfpath);
+		    while ((dir_ent = readdir(dp)) != NULL)
+		    {
+			if (strcmp(dir_ent->d_name, ".") == 0 || strcmp(dir_ent->d_name, "..") == 0)
+			    continue;
+
+			++file_count;
+		    }
+		    emptydir=lstat(node->listfpath,&checkemptybuf);
+		    //printf("PP%d",emptydir);
+		    if(file_count>0){
+			for(int i=0;i<14-strlen(node->listfname);i++){
+			    sprintf(treefname,"%s-",treefname);
+			}
+			printf("|%-15s",treefname);
+		    }
+		    else//empty dir 
+			printf("|%-15s\n",treefname);
+
+		    fcnt--;
 		    scanningCdir(flist[i]->d_name,depth,TREE,0,delcurdir);
 		}
 	    }
