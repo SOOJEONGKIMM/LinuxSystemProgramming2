@@ -614,12 +614,12 @@ memset((char*)fnamepath,0,PATH_SIZE);
 	    return 0;
 	}
 	//void scanningCdir(char *searchdir,int depth,int sizeoptflag,int depthopt,int indent)//원형
-	scanningCdir(onlyfname,depth-1,1,1,curdir);
+	scanningCdir(onlyfname,depth-1,DEPTHEXIST,1,curdir);
     }
 
     if(sizeoptd==0){
 
-	scanningCdir(NULL,0,0,1,curdir);//하위디렉토리까지 한번 스캔해서 리스트에 정보받아옴.
+	scanningCdir(NULL,0,ALL,1,curdir);//하위디렉토리까지 한번 스캔해서 리스트에 정보받아옴.
 	CNode *fnode=(CNode*)malloc(sizeof(CNode));
 	memset(fnode,0,sizeof(fnode));
 	fnode=chead;
@@ -637,7 +637,7 @@ lstat(fnode->listfpath,&fbuf);
 	    fnode=fnode->next;
 	}
 chdir(curdir);
-	scanningCdir(onlyfname,0,1,0,curdir);
+	scanningCdir(onlyfname,0,ONLYDIR,1,curdir);
     }
     int sizesum=0;
     struct stat statbuf;//file or dir?
@@ -1247,11 +1247,14 @@ void list_insert(Node *newNode){//list에 node추가
 	listF->next=newNode;
     }
 }
-void scanningCdir(char *searchdir,int depth,int sizeoptflag,int depthopt,char *delcurdir){//SIZE
+void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *delcurdir){//SIZE
     //chead=NULL;//init first!    
     char curdir[PATH_SIZE];
     char searchdirbuf[PATH_SIZE];
-    static int indent=0;
+    static int indent;
+    if(indentinit==1){
+	indent=0;
+    }
     // char fnamepath[PATH_SIZE];
     char temppath[PATH_SIZE];
     char relativepath[PATH_SIZE];
@@ -1354,7 +1357,7 @@ else
 	    //printf("fize(buf.st_size):%d\n",node->fsize);
 	    //printf("listfname:%s\n",node->listfname);
 	    //printf("listfpath:%s\n",node->listfpath);
-	    if(sizeoptflag==1&&depthopt==1){
+	    if(sizeoptflag==DEPTHEXIST){
 		memset(relativepath,0,PATH_SIZE);	
 		makeRelativeP(node->listfpath,relativepath,delcurdir);
 		memset(node->relP,0,PATH_SIZE);
@@ -1368,7 +1371,7 @@ else
 	    //dir에 해당하는 do_sizeprintOpt()출력..
 	    //depth만큼만 하부 디렉토리 검색을 한다.
 
-	    if(sizeoptflag==1 && depthopt==0){
+	    if(sizeoptflag==ONLYDIR){
 		if(depth==0)
 		    indent++;
 		/*if(!strcmp(searchdirbuf,temppath)){
@@ -1376,23 +1379,23 @@ else
 		  }*/
 	    }
 
-	    if(sizeoptflag==1&&depthopt==1){
+	    if(sizeoptflag==DEPTHEXIST){//deo
 		if((indent<(depth-1))&&depth!=0){
 		    indent++;
 		    //printf("current DEPTH:%d, indent:%d\n",depth,indent);
 		    //재귀호출...
 		    //printf("~~~~~~~~~~~~~~SCANDIR RECURSIVE~~~~~~~~~~~~~\n");
 
-		    scanningCdir(flist[i]->d_name,depth,1,1,delcurdir);
+		    scanningCdir(flist[i]->d_name,depth,DEPTHEXIST,0,delcurdir);
 		}
 	    }
-if(sizeoptflag==0&&depthopt==1){//하위 디렉토리 끝까지 가는 경우 
+if(sizeoptflag==ALL){//하위 디렉토리 끝까지 가는 경우 
 indent++;
 //printf("current DEPTH:%d, indent:%d\n",depth,indent);
 		 
 		    //printf("~~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
 
-		    scanningCdir(flist[i]->d_name,depth,0,1,delcurdir);
+		    scanningCdir(flist[i]->d_name,depth,ALL,0,delcurdir);
 }
 
 	    /*if(sizeoptflag==1&&depthopt==0){
