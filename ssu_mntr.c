@@ -1349,7 +1349,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
 	    Clist_insert(node);
 	    //printf("fize(buf.st_size):%d\n",node->fsize);
-	    //printf("listfpath:%s\n",node->listfpath);
+	    printf("listfpath:%s\n",node->listfpath);
 	    memset(relativepath,0,PATH_SIZE);	
 	    makeRelativeP(node->listfpath,relativepath,delcurdir);
 	    memset(node->relP,0,PATH_SIZE);
@@ -1435,7 +1435,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
     }
     indent--;
     chdir("..");
-    // printf("-------------------------scanning dir for CNode list ends\n");
+     printf("-------------------------scanning dir for CNode list ends\n");
 }
 void Clist_insert(CNode *newNode){//list에 node추가
     newNode->next=NULL;
@@ -1449,6 +1449,7 @@ void Clist_insert(CNode *newNode){//list에 node추가
 	listF->next=newNode;
     }
 }
+
 void swap_Cnode_data(CNode *list1, CNode *list2){
     //char dtime[TM_SIZE];
     //char mtime[TM_SIZE];
