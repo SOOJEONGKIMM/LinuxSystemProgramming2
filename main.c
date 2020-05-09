@@ -25,21 +25,21 @@ int main(void){
     //    mkdir(checkdir,0744);
     printf("checkdir:%s\n",mondir);
 
-    scanmondir(NULL,0,TREE,1,curdir);
+	scanmondir(NULL,0,TREE,1,curdir);
     startdemon(mondir);
 
     chdir(wdir);
-    ssu_mntr_play();//옵션입력으로 넘어감.
+    //옵션입력으로 넘어감.
     close(fd);
     //return 0;
 }
 void startdemon(char *scanningdir){
+    pid_t pid;
+    /*    int fd, maxfd;
 
-    int fd, maxfd;
+	  pid_t pid;
 
-    //    pid_t pid;
-
-    printf("forlogtxt");
+	  printf("forlogtxt");
     //printf(file);//debug
     char debugdir[PATH_SIZE];
     strcpy(debugdir,getcwd(NULL,0));//***절대경로 상대경로 입력시 모두 동작하도록 수정해야함
@@ -48,8 +48,8 @@ void startdemon(char *scanningdir){
     //fork()로 자식 프로세스를 생성한다. 
     //이 함수는 한 번 호출되나 두 개의 리턴값을 리턴하는 함수다.
     //자식에게 리턴하는값은 0, 부모에게는 새 자식프로세스의 ID. 
-    /*    if((pid=fork())<0)//프로세스 생성 실패시 -1리턴.
-	  exit(0);
+    if((pid=fork())<0)//프로세스 생성 실패시 -1리턴.
+    exit(0);
     //부모프로세스를 종료시킴.
     else if(pid!=0)
     exit(0);
@@ -79,10 +79,19 @@ void startdemon(char *scanningdir){
     dup(0);
     dup(0);
     */
-    // while(1){
-    printf("++++++++++++++++++++++++++++++++++whileloop++++++++++++++++++++\n");
-    forlogtxt(scanningdir);
-    //}
+    /*  switch(pid=fork()){
+	case 0:
+	printf("I'm child. My PID is %d\n",getpid());*/
+    while(1){
+	printf("++++++++++++++++++++++++++++++++++whileloop++++++++++++++++++++\n");
+	forlogtxt(scanningdir);
+	printf("ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
+
+    }
+    //	default:*/
+    ssu_mntr_play();
+    //    }
+
 }
 
 void forlogtxt(char *mondir){
@@ -105,11 +114,13 @@ void forlogtxt(char *mondir){
     int inum,i;
     int newfile;//create flag
     char temppath[PATH_SIZE];
-    int countdirp=0;
+
     struct dirent **flist;
+    int countdirp=0;
     if((countdirp=scandir(mondir,&flist,0,alphasort))<0){
 	fprintf(stderr,"scandir error for %s\n",mondir);
-	exit(1);
+	startdemon(mondir);
+	//forlogtxt(mondir);
     }
     i=0;
     while(i<countdirp){
@@ -138,6 +149,7 @@ void forlogtxt(char *mondir){
 	    fprintf(stderr,"lstat error for %s\n",temppath);
 	    // exit(1);
 	}
+	printf("SCANNNG:%s\n",temppath);
 
 	MNode *crenode=(MNode*)malloc(sizeof(MNode));
 	memset(crenode,0,sizeof(crenode));
@@ -152,6 +164,7 @@ void forlogtxt(char *mondir){
 	    }
 	    crenode=crenode->next;
 	}
+	free(crenode);
 	if(newfile==1){
 	    t=localtime(&tempstat.st_ctime);
 	    fprintf(fp,"[%04d-%02d-%02d %02d:%02d:%02d][create_%s]\n",t->tm_year + 1900, t->tm_mon+1,t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec,flist[i]->d_name);
@@ -170,7 +183,7 @@ void forlogtxt(char *mondir){
 	    else{	
 		inum=buf.st_ino;
 		printf("node->listfname:%s   ",lognode->listfname);
-		printf("nodeinum:%d   inum: %d\n",lognode->inum,inum);
+		//		printf("nodeinum:%d   inum: %d\n",lognode->inum,inum);
 		if(lognode->inum==inum){
 		    if(strcmp(lognode->listfname,flist[i]->d_name)){//이름변경 
 			t=localtime(&buf.st_mtime);
@@ -178,8 +191,8 @@ void forlogtxt(char *mondir){
 		    }
 		    else{
 			if(strcmp(lognode->mtime,ctime(&buf.st_mtime))){//수정시각변화 
-			t=localtime(&buf.st_mtime);
-			fprintf(fp,"[%04d-%02d-%02d %02d:%02d:%02d][modify_%s]\n", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,lognode->listfname);
+			    t=localtime(&buf.st_mtime);
+			    fprintf(fp,"[%04d-%02d-%02d %02d:%02d:%02d][modify_%s]\n", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,lognode->listfname);
 			}
 		    }
 
@@ -187,23 +200,23 @@ void forlogtxt(char *mondir){
 	    }
 	    lognode=lognode->next;
 	}	  
+	free(lognode);
 
 	if(S_ISDIR(tempstat.st_mode)){
 
-	printf("SCANNNG:%s\n",temppath);
 	    printf("~~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
 	    forlogtxt(temppath);
-	 }
-
-
-/*	if(lstat(temppath,&recurstat)<0){
-	    printf("lstat error\n");
 	}
-	if((recurstat.st_mode&S_IFDIR)==S_IFDIR){
 
-	    //	indent++;
-	    //strcpy(node->listfpath,temppath);
-	    printf("listfpath:%s\n",lognode->listfpath);
+
+	/*	if(lstat(temppath,&recurstat)<0){
+		printf("lstat error\n");
+		}
+		if((recurstat.st_mode&S_IFDIR)==S_IFDIR){
+
+	//	indent++;
+	//strcpy(node->listfpath,temppath);
+	printf("listfpath:%s\n",lognode->listfpath);
 
 
 
@@ -214,6 +227,10 @@ void forlogtxt(char *mondir){
     }
     //indent--;
     chdir("..");
+    for(int i=0;i<countdirp;i++){
+      free(flist[i]);
+    }
+    //  free(flist[i]);
     printf("scandir update end======================================\n");
 }
 
@@ -310,28 +327,28 @@ void scanmondir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *d
 
 	memset(node->listfname,0,PATH_SIZE);
 	strcpy(node->listfname,flist[i]->d_name);
-//	if(S_ISREG(tempstat.st_mode)){
+	//	if(S_ISREG(tempstat.st_mode)){
 
-	    strcpy(node->listfpath,temppath);
-	    fsize=0;
-	    fsize=stat(node->listfpath,&buf);//SIZE 
-
-
-	    node->fsize=0;
-	    node->fsize=buf.st_size;//SIZE
-
-	    memset(node->mtime,0,TM_SIZE);
-	    strcpy(node->mtime,ctime(&buf.st_mtime));
-	    printf("mtime:%s\n",node->mtime);
-
-	    node->inum=buf.st_ino;//inode num
+	strcpy(node->listfpath,temppath);
+	fsize=0;
+	fsize=stat(node->listfpath,&buf);//SIZE 
 
 
-	    printf("fize(buf.st_size):%d\n",node->fsize);
-	    printf("listfpath:%s\n",node->listfpath);
+	node->fsize=0;
+	node->fsize=buf.st_size;//SIZE
 
-	    Mlist_insert(node);
-//	}
+	memset(node->mtime,0,TM_SIZE);
+	strcpy(node->mtime,ctime(&buf.st_mtime));
+	printf("mtime:%s\n",node->mtime);
+
+	node->inum=buf.st_ino;//inode num
+
+
+	printf("fize(buf.st_size):%d\n",node->fsize);
+	printf("listfpath:%s\n",node->listfpath);
+
+	Mlist_insert(node);
+	//	}
 	if((tempstat.st_mode&S_IFDIR)==S_IFDIR){
 
 	    indent++;
