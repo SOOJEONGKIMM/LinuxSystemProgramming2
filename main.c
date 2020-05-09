@@ -6,7 +6,8 @@ void scanmondir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *d
 int main(void){
     char wdir[PATH_SIZE];
     char mondir[PATH_SIZE];
-    int fd;
+    char *fname="log.txt";
+    FILE *fp;
     //    char logpath[PATH_SIZE];//log.txt path name
     //    pid_t pid;
 
@@ -24,16 +25,19 @@ int main(void){
     sprintf(mondir,"%s/check",wdir);
     //    mkdir(checkdir,0744);
     printf("checkdir:%s\n",mondir);
-
-	scanmondir(NULL,0,TREE,1,curdir);
-    startdemon(mondir);
-
+    scanmondir(NULL,0,TREE,1,wdir);
+    chdir(mondir);
+    if((fp=fopen(fname,"a"))<0){
+	fprintf(stderr,"fopen %s error",fname);
+	exit(1);
+    }
     chdir(wdir);
+    startdemon(wdir,fp);
+
     //옵션입력으로 넘어감.
-    close(fd);
-    //return 0;
+    return 0;
 }
-void startdemon(char *scanningdir){
+void startdemon(char *curdir,FILE *fp){
     pid_t pid;
     /*    int fd, maxfd;
 
@@ -41,9 +45,6 @@ void startdemon(char *scanningdir){
 
 	  printf("forlogtxt");
     //printf(file);//debug
-    char debugdir[PATH_SIZE];
-    strcpy(debugdir,getcwd(NULL,0));//***절대경로 상대경로 입력시 모두 동작하도록 수정해야함
-    printf("debugdir:%s",debugdir);
 
     //fork()로 자식 프로세스를 생성한다. 
     //이 함수는 한 번 호출되나 두 개의 리턴값을 리턴하는 함수다.
@@ -84,7 +85,7 @@ void startdemon(char *scanningdir){
 	printf("I'm child. My PID is %d\n",getpid());*/
     while(1){
 	printf("++++++++++++++++++++++++++++++++++whileloop++++++++++++++++++++\n");
-	forlogtxt(scanningdir);
+	forlogtxt(NULL,0,TREE,1,curdir,fp);
 	printf("ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
 
     }
@@ -93,37 +94,66 @@ void startdemon(char *scanningdir){
     //    }
 
 }
-
-void forlogtxt(char *mondir){
-    printf("scanning update dir:%s\n",mondir);
-    char *fname="log.txt";
-    struct stat tempstat;//scanning current update stat
-    struct stat recurstat;//scanning current update stat
-    struct stat buf; //linkedlist stat
+void forlogtxt(char *searchdir,int depth,int sizeoptflag,int indentinit,char *delcurdir,FILE *fp){//SIZE
+    ////init first!   
     struct stat crebuf; //linkedlist stat(create log)
+    int newfile,inum; 
+    char curdir[PATH_SIZE];
+    char checkdir[PATH_SIZE];
+    char searchdirbuf[PATH_SIZE];
+    static int indent;
+    static int depthcnt;//recursive num
+    if(indentinit==1){
+	indent=0;//처음으로 스캔시작할때만 초기화되도록 
+	mhead=NULL;
+    }
     struct tm *t;//시간값 표현하기 위한 구조체
-    FILE *fp;
+    char temppath[PATH_SIZE];
+    char treefname[BUFFER_SIZE];
+    char relativepath[PATH_SIZE];
+    //struct stat statbuf;    
+    struct stat tempstat;
+    // struct timeval *renamet;    
+    int i;   
+    char listfname[FILE_SIZE];
+    int recoptl=1;//init
+    int fsize;//SIZE
+    int fcnt=0;
 
-    chdir(mondir);
-    printf("Hi\n");
-    //여기부터 프로그램 본체
-    if((fp=fopen(fname,"a"))<0){
-	fprintf(stderr,"fopen %s error",fname);
+    struct stat buf;//SIZE
+    struct stat checkemptybuf;//TREE 빈폴더인경우 -----표시를 하지 않는다. 
+    int emptydir=0;
+    memset(curdir,0,PATH_SIZE);
+    memset(checkdir,0,PATH_SIZE);
+    memset(temppath,0,PATH_SIZE); 
+    strcpy(curdir,getcwd(NULL,0));
+    sprintf(checkdir,"%s/check",curdir);
+    printf("-------------------------scanning dir for CNode list\n");
+    printf("curdir:%s\n",curdir);
+    memset(searchdirbuf,0,PATH_SIZE);
+    if(searchdir==NULL&&sizeoptflag!=TREE)
+	strcpy(searchdirbuf,curdir);
+    else if(searchdir==NULL&&sizeoptflag==TREE)////////////////////////////////////////////////
+	strcpy(searchdirbuf,checkdir);
+    else
+	sprintf(searchdirbuf,"%s/%s",curdir,searchdir);
+
+    int countdirp=0;
+    struct dirent **flist;
+
+    if(chdir(searchdirbuf)<0){//returns 0 if success
+	fprintf(stderr,"DIR:%s can't be found.\n",searchdirbuf);
+	perror("chdir");
+    }
+    if((countdirp=scandir(searchdirbuf,&flist,0,alphasort))<0){
+	fprintf(stderr,"scandir error for %s\n",searchdirbuf);
 	exit(1);
     }
-    int inum,i;
-    int newfile;//create flag
-    char temppath[PATH_SIZE];
-
-    struct dirent **flist;
-    int countdirp=0;
-    if((countdirp=scandir(mondir,&flist,0,alphasort))<0){
-	fprintf(stderr,"scandir error for %s\n",mondir);
-	startdemon(mondir);
-	//forlogtxt(mondir);
-    }
     i=0;
+    //info dir의 파일이름, 삭제시간, 수정시간 각 노드 만들어주기
     while(i<countdirp){
+
+	//printf("counting file num in %s dir..\n",searchdirbuf);
 	if(!strcmp(flist[i]->d_name,".")||!strcmp(flist[i]->d_name,"..")){
 	    i++;
 	    continue;
@@ -140,6 +170,7 @@ void forlogtxt(char *mondir){
 	    i++;
 	    continue;
 	}
+
 	memset(temppath,0,PATH_SIZE);
 	if(realpath(flist[i]->d_name,temppath)==0){
 	    fprintf(stderr,"real path error for %s\n",flist[i]->d_name);
@@ -149,7 +180,6 @@ void forlogtxt(char *mondir){
 	    fprintf(stderr,"lstat error for %s\n",temppath);
 	    // exit(1);
 	}
-	printf("SCANNNG:%s\n",temppath);
 
 	MNode *crenode=(MNode*)malloc(sizeof(MNode));
 	memset(crenode,0,sizeof(crenode));
@@ -202,36 +232,23 @@ void forlogtxt(char *mondir){
 	}	  
 	free(lognode);
 
-	if(S_ISDIR(tempstat.st_mode)){
+	if((tempstat.st_mode&S_IFDIR)==S_IFDIR){
 
-	    printf("~~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
-	    forlogtxt(temppath);
-	}
+	    indent++;
 
 
-	/*	if(lstat(temppath,&recurstat)<0){
-		printf("lstat error\n");
-		}
-		if((recurstat.st_mode&S_IFDIR)==S_IFDIR){
+	    printf("~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
 
-	//	indent++;
-	//strcpy(node->listfpath,temppath);
-	printf("listfpath:%s\n",lognode->listfpath);
-
-
+	    if(sizeoptflag==TREE)
+		scanmondir(flist[i]->d_name,depth,TREE,0,delcurdir);
 
 	}
 
-*/
 	i++;
     }
-    //indent--;
+    indent--;
     chdir("..");
-    for(int i=0;i<countdirp;i++){
-      free(flist[i]);
-    }
-    //  free(flist[i]);
-    printf("scandir update end======================================\n");
+    printf("-------------------------scanning dir for CNode list ends\n");
 }
 
 void scanmondir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *delcurdir){//SIZE
