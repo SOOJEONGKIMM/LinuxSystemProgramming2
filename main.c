@@ -86,9 +86,12 @@ void startdemon(char *scanningdir){
 }
 
 void forlogtxt(char *mondir){
+    printf("scanning update dir:%s\n",mondir);
     char *fname="log.txt";
-    struct stat tempstat;
-    struct stat buf;//파일정보 구조체 
+    struct stat tempstat;//scanning current update stat
+    struct stat recurstat;//scanning current update stat
+    struct stat buf; //linkedlist stat
+    struct stat crebuf; //linkedlist stat(create log)
     struct tm *t;//시간값 표현하기 위한 구조체
     FILE *fp;
 
@@ -131,11 +134,10 @@ void forlogtxt(char *mondir){
 	    fprintf(stderr,"real path error for %s\n",flist[i]->d_name);
 	    //  exit(1);
 	}
-	if(stat(temppath,&tempstat)<0){
+	if(lstat(temppath,&tempstat)<0){
 	    fprintf(stderr,"lstat error for %s\n",temppath);
 	    // exit(1);
 	}
-		inum=tempstat.st_ino;
 
 	MNode *crenode=(MNode*)malloc(sizeof(MNode));
 	memset(crenode,0,sizeof(crenode));
@@ -143,7 +145,9 @@ void forlogtxt(char *mondir){
 
 	newfile=1;
 	while(crenode){//create time fprint
+	    stat(crenode->listfpath, &crebuf);
 	    if(!strcmp(crenode->listfname,flist[i]->d_name)){
+		if(crebuf.st_ino==crenode->inum)
 		    newfile=0;
 	    }
 	    crenode=crenode->next;
@@ -164,17 +168,18 @@ void forlogtxt(char *mondir){
 		fprintf(fp,"[%04d-%02d-%02d %02d:%02d:%02d][delete_%s]\n", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,lognode->listfname);
 	    }
 	    else{	
+		inum=buf.st_ino;
 		printf("node->listfname:%s   ",lognode->listfname);
 		printf("nodeinum:%d   inum: %d\n",lognode->inum,inum);
 		if(lognode->inum==inum){
 		    if(strcmp(lognode->listfname,flist[i]->d_name)){//이름변경 
 			t=localtime(&buf.st_mtime);
-			fprintf(fp,"[%04d-%02d-%02d %02d:%02d:%02d][LASTmodify_%s]\n", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,lognode->listfname);
+			fprintf(fp,"[%04d-%02d-%02d %02d:%02d:%02d][modify_%s]\n", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,lognode->listfname);
 		    }
 		    else{
 			if(strcmp(lognode->mtime,ctime(&buf.st_mtime))){//수정시각변화 
 			t=localtime(&buf.st_mtime);
-			fprintf(fp,"[%04d-%02d-%02d %02d:%02d:%02d][LASTmodify_%s]\n", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,lognode->listfname);
+			fprintf(fp,"[%04d-%02d-%02d %02d:%02d:%02d][modify_%s]\n", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,lognode->listfname);
 			}
 		    }
 
@@ -183,23 +188,28 @@ void forlogtxt(char *mondir){
 	    lognode=lognode->next;
 	}	  
 
-	// if(S_ISREG(tempstat.st_mode)){
-	// }
+	if(S_ISDIR(tempstat.st_mode)){
+
+	printf("SCANNNG:%s\n",temppath);
+	    printf("~~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
+	    forlogtxt(temppath);
+	 }
 
 
-	if((tempstat.st_mode&S_IFDIR)==S_IFDIR){
+/*	if(lstat(temppath,&recurstat)<0){
+	    printf("lstat error\n");
+	}
+	if((recurstat.st_mode&S_IFDIR)==S_IFDIR){
 
 	    //	indent++;
 	    //strcpy(node->listfpath,temppath);
 	    printf("listfpath:%s\n",lognode->listfpath);
 
-	    printf("~~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
 
 
-	    forlogtxt(flist[i]->d_name);
 	}
 
-
+*/
 	i++;
     }
     //indent--;
