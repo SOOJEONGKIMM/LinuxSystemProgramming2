@@ -170,6 +170,7 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	    while(i<len && str[i]==' ')
 		i++;
 	    a=0;
+	    memset(endtimestr,0,TM_SIZE);
 	    for(j=i;j<len && str[j]!=' ';j++){//10:00
 		endtimestr[a]=str[j];
 		a++;
@@ -208,8 +209,10 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	//	char alarmTmin[TM_SIZE];
 	char endtimehour[TM_SIZE];
 	char endtimemin[TM_SIZE];
+	char endtimesec[TM_SIZE];
 	struct tm alarmsetT;
 	int waitmin=0;
+	int waitsec=0;
 	printf("setting alarm\n");
 	time_t alarmsett=time(NULL);
 	alarmsetT=*localtime(&alarmsett);
@@ -221,24 +224,43 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	    endtimehour[i]=endtimestr[i];
 	    j++;
 	}
-	printf("Pendtimehour:%s\n",endtimehour);
+//	printf("Pendtimehour:%s\n",endtimehour);
 	while(i<strlen(endtimestr) && endtimestr[i]==':')
 	    i++;
 	//j=0;
-	for(int i=0;i<strlen(endtimestr)&&endtimestr[i]!=' ';i++){//10:30 min
+	for(i=0;i<strlen(endtimestr)&&endtimestr[i]!=' ';i++){//10:30 min
 	    endtimemin[i]=endtimestr[j+1];
 	    j++;
 	}
+	while(i<strlen(endtimestr) && endtimestr[i]==':')
+	    i++;
+	for(i=0;i<strlen(endtimestr)&&endtimestr[i]!=' ';i++){//10:30:11 sec
+	    endtimesec[i]=endtimestr[j+1];
+	    j++;
+	}
+	printf("endtimemin:%s\n",endtimemin);
+	printf("endtimesec:%s\n",endtimesec);
 	int endtimeminInt=atoi(endtimemin);
+	int endtimesecInt=atoi(endtimesec);
+	//char alarmsetT[TM_SIZE];
+	
 	waitmin=endtimeminInt-alarmsetT.tm_min;
+	waitsec=endtimesecInt-alarmsetT.tm_sec;
 	if(waitmin<0){
 	    printf("[ENDTIME] is set wrong.\n");
 	    ssu_mntr_play();
 	}
-	printf("waitSec:%d\n",waitmin*60);
+	if(waitsec<0){
+	    waitmin-=1;
+	    waitsec=60-alarmsetT.tm_sec+endtimesecInt;
+	}
+	if(waitmin>0){
+	    waitsec=waitmin*60+waitsec;
+	}
+	printf("waitSec:%d\n",waitsec);
 	int k=3;
 	signal(SIGALRM,deloptR_alarm);
-	alarm(waitmin*60);//예약시간이 되면 alarm이 SIGALRM을 전송한다.
+	alarm(waitsec);//예약시간이 되면 alarm이 SIGALRM을 전송한다.
 
 
 	printf("after alarm\n");
@@ -257,7 +279,7 @@ void deloptR_alarm(int k){
     char recheckbuf[OPT_SIZE];
     printf("alarm ringing\n");
     //vfork 생성 (자식/부모프로세스에서 삭제작업 진행)
-    switch(pid=vfork()){
+    switch(pid=fork()){
 	case 0:
 	    printf("I'm child. My PID is %d\n",getpid());
 	    if(deloptR==1){//do_deleteOpt()호출 전 재확인 문구
