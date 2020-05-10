@@ -88,6 +88,18 @@ typedef struct MNode{//연결리스트의 노드 구조체
     struct MNode *prev;
 }MNode;
 MNode * mhead;
+typedef struct MnNode{//연결리스트의 노드 구조체
+    struct MnNode *next;//다음 노드의 주소를 저장할 포인터
+    char listfname[FILE_SIZE];
+    char listfpath[PATH_SIZE];
+    int fsize;
+    int inum;
+    struct stat buf;  // time of last modification
+    char mtime[TM_SIZE];
+    char dtime[TM_SIZE];
+    struct MnNode *prev;
+}MnNode;
+MnNode * mnhead;
 //이러한 연결노드들을 갖고있는 리스트.head는 리스트의 시작노드, tail는 노드의 끝부분 가리키는 포인터.
 typedef struct fList{//연결리스트의 노드 구조체
     struct fList *head;//데이터는 없는 head노드 
@@ -101,13 +113,17 @@ typedef struct fList{//연결리스트의 노드 구조체
 char cdir[256];//파일경로 저장
 
 //void scandirlog(char *scanningdir);
-void startdemon(char *scanningdir);
-void forlogtxt(char *mondir);
-void scanmondir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *delcurdir);//,static int indent);//,int indent);
+void startdemon(char *curdir,char *checkdir);
+void forlogtxt(void);
+int scanmondirBASE(char *searchdir,int inityes);
+int scanmondirNEW(char *searchdir,int inityes);
+void write_logtxt(char *fname, char *status,char *mtimeifmod);
+void get_time(char *str,char *status);
 
 void list_insert(Node *newNode);//list에 node추가
 void Clist_insert(CNode *newNode);//list에 node추가
 void Mlist_insert(MNode *newNode);
+void Mnlist_insert(MnNode *newNode);
 void list_sort(int (*cmp)());
 void list_sortC(int (*cmp)());
 void list_print();
