@@ -7,6 +7,7 @@ int update;
 int main(void){
     char wdir[PATH_SIZE];
     char mondir[PATH_SIZE];
+    int idx=0;
     //    char logpath[PATH_SIZE];//log.txt path name
     //    pid_t pid;
 
@@ -26,7 +27,7 @@ int main(void){
     //chdir(mondir);
     //    mkdir(checkdir,0744);
     printf("checkdir:%s\n",mondir);
-    scanmondirBASE(mondir,1);
+    scanmondirBASE(mondir,1,binfo[BUFFER_SIZE],idx);
     //chdir(wdir);
     startdemon(wdir,mondir);
 
@@ -41,6 +42,10 @@ void startdemon(char *curdir,char *checkdir){
     memset(mondir,0,PATH_SIZE);
     getcwd(wdir,PATH_SIZE);//***절대경로 상대경로 입력시 모두 동작하도록 수정해야함
     sprintf(mondir,"%s/check",wdir);
+    //Neww neww;
+    //se base;
+    struct Base binfo[BUFFER_SIZE];
+    struct Neww ninfo[BUFFER_SIZE];
     /*    int fd, maxfd;
 
 	  pid_t pid;
@@ -89,17 +94,19 @@ void startdemon(char *curdir,char *checkdir){
 	//sleep(1);
 	printf("++++++++++++++++++++++++++++++++++whileloop++++++++++++++++++++\n");
 	printf("check:%s\n",mondir);
-//	chdir(ckdir);
-	scanmondirNEW(mondir,1);//1초 주기로 new스캔+base&new비교
-//	chdir(curdir);
-	forlogtxt();
+	//	chdir(ckdir);
+	idx;
+	scanmondirNEW(mondir,1,ninfo[BUFFER_SIZE],idx);//1초 주기로 new스캔+base&new비교
+	//	chdir(curdir);
+	//forlogtxt();
 
-		if(update==1){//if update, scan base again.
-		update=0;//init
-		printf("update:%d\n",update);
-		scanmondirBASE(mondir,1);
-		}
-		
+	if(update==1){//if update, scan base again.
+	    update=0;//init
+	    idx=0;
+	    printf("update:%d\n",update);
+    scanmondirBASE(mondir,1,binfo[BUFFER_SIZE],idx);
+	}
+
 	printf("ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
 
     }
@@ -108,137 +115,140 @@ void startdemon(char *curdir,char *checkdir){
     //    }
 
 }
-void forlogtxt(void){//cmp base&new 
+/*void forlogtxt(void){//cmp base&new 
 
-    printf("-------------------------COMPARE STARTS----------------------\n");
+  printf("-------------------------COMPARE STARTS----------------------\n");
 
-    //MNode *crenode=(MNode*)malloc(sizeof(MNode));
-    //memset(crenode,0,sizeof(crenode));
-    int newfile,deleted,modified; 
-    MNode *crenode;
-    crenode=mhead;
-    MnNode *Ncrenode;
-    Ncrenode=mnhead;
+//MNode *crenode=(MNode*)malloc(sizeof(MNode));
+//memset(crenode,0,sizeof(crenode));
+int newfile,deleted,modified; 
+/*    MNode *crenode;
+crenode=mhead;
+MnNode *Ncrenode;
+Ncrenode=mnhead;
 
-    
 
-    modified=0;
-    if(update!=1){
-	MNode *modnode;
-	modnode=mhead;
-	MnNode *Nmodnode;
-	Nmodnode=mnhead;
 
-	while(modnode){
-	    while(Nmodnode){
-printf("mfname:n %s b %s\n",Ncrenode->listfname,crenode->listfname);
-printf("modnode->inum:%d Nmodnode->inum %d\n",modnode->inum,Nmodnode->inum);
-		if(modnode->inum==Nmodnode->inum){//same file  
-		    if(strcmp(modnode->mtime,Nmodnode->mtime)){//but mtime change
-			write_logtxt(modnode->listfname,"modify",NULL);
-			update=1;
-			modified=1;
-			printf("MODIFY LOG!!!!!!!!!!!!!!!!\n");
-			break;
-		    }
-		    if(strcmp(modnode->listfpath,Nmodnode->listfpath)){//but path change
-			write_logtxt(modnode->listfname,"modify",NULL);
-			update=1;
-			modified=1;
-			printf("MODIFY LOG!!!!!!!!!!!!!!!!\n");
-			break;
-		    }
-		    if(strcmp(modnode->listfname,Nmodnode->listfname)){//fname change
-			write_logtxt(modnode->listfname,"modify",NULL);
-			update=1;
-			modified=1;
-			printf("MODIFY LOG!!!!!!!!!!!!!!!!\n");
-			break;
-		    }
+modified=0;
+if(update!=1){
+struct MNode *result=NULL;
+MNode *modnode;
+modnode=mhead;
+MnNode *Nmodnode;
+Nmodnode=mnhead;
 
-		}
-Nmodnode=Nmodnode->next;
-		
-	   
-	    modnode=modnode->next;
+while(modnode){
+push(&result, modnode->mtime);
+modnode=modnode->next;
 }
-	}
-    //free(modnode);
-    //free(Nmodnode);
+
+while(Nmodnode!=NULL){
+
+//printf("mfname:n %s b %s\n",Ncrenode->listfname,crenode->listfname);
+//printf("mfpath:n %s b %s\n",crenode->listfpath,crenode->listfpath);
+//	printf("modnode->inum:%d Nmodnode->inum %d\n",modnode->inum,Nmodnode->inum);
+
+if(isPresent(result,Nmodnode->mtime)){//but mtime change
+write_logtxt(modnode->listfname,"modify",NULL);
+update=1;
+modified=1;
+printf("MODIFY LOG!!!!!!!!!!!!!!!!\n");
+break;
+}
+/*   if(strcmp(modnode->listfpath,Nmodnode->listfpath)){//but path change
+write_logtxt(modnode->listfname,"modify",NULL);
+update=1;
+modified=1;
+printf("MODIFY LOG!!!!!!!!!!!!!!!!\n");
+break;
+}*/
+/*  if(strcmp(modnode->listfname,Nmodnode->listfname)){//fname change
+    write_logtxt(modnode->listfname,"modify",NULL);
+    update=1;
+    modified=1;
+    printf("MODIFY LOG!!!!!!!!!!!!!!!!\n");
+    break;
+    }*/
+
+/*Nmodnode=Nmodnode->next;
+
+  }
+//free(modnode);
+//free(Nmodnode);*/
+/*  }
+    newfile=1;//CREATE LOG: new 기준으로 
+    while(Ncrenode){
+    printf("what\n");
+    while(crenode){//create time fprint
+    printf("is wrong?\n");
+
+    if(Ncrenode->inum==crenode->inum){//existing file in base
+    printf("CrE Ninum:%d   inum: %d\n",Ncrenode->inum,crenode->inum);
+    printf("fname:n %s b %s\n",Ncrenode->listfname,crenode->listfname); 
+    newfile=0;
     }
-newfile=1;//CREATE LOG: new 기준으로 
-    while(Ncrenode!=NULL){
-	printf("what\n");
-	while(crenode!=NULL){//create time fprint
-	    printf("is wrong?\n");
-printf("Pfname:n %s b %s\n",Ncrenode->listfname,crenode->listfname); 
-	    if(Ncrenode->inum==crenode->inum){//existing file in base
-		printf("CrE Ninum:%d   inum: %d\n",Ncrenode->inum,crenode->inum);
-		printf("fname:n %s b %s\n",Ncrenode->listfname,crenode->listfname); 
-		newfile=0;
-	    }
-	    crenode=crenode->next;
-	    printf("working create...\n");
-	
-	if(newfile==1){//not existing file in base
-	    write_logtxt(Ncrenode->listfname,"create",NULL);
-	    update=1;
-	    printf("CREATE LOG!!!!!!!!!!!!!!!!\n");
-	}
-	Ncrenode=Ncrenode->next;
-	    printf("next Nnode scan working create...\n");
-}
+    crenode=crenode->next;
+    printf("working create...\n");
+
+    if(newfile==1){//not existing file in base
+    write_logtxt(Ncrenode->listfname,"create",NULL);
+    update=1;
+    printf("CREATE LOG!!!!!!!!!!!!!!!!\n");
     }
-    //free(crenode);
-    //free(Ncrenode);
-    if(update!=1&&modified!=1){
-	MNode *delnode;
-	delnode=mhead;
-	MnNode *Ndelnode;
-	Ndelnode=mnhead;
-
-	deleted=1;//DELETE LOG: base 기준으로 
-	while(delnode){
-	    while(Ndelnode){
-		if(Ndelnode->inum==delnode->inum){//existing file in new&base  
-		    printf("dell Nnum:%d   inum: %d\n",Ndelnode->inum,delnode->inum);
-		    deleted=0;
-		}
-		Ndelnode=Ndelnode->next;
-	    
-
-	    if(deleted==1){//not existing file in new 
-		write_logtxt(delnode->listfname,"delete",NULL);
-		update=1;
-		printf("DELETE LOG!!!!!!!!!!!!!!!!\n");
-		break;
-	    }
-	    delnode=delnode->next;
-}
-	}
-    //free(delnode);
-   // free(Ndelnode);
+    printf("next Nnode scan working create...\n");
     }
+    Ncrenode=Ncrenode->next;
+    printf("Pfname:n %s b %s\n",Ncrenode->listfname,crenode->listfname); 
+    }
+//free(crenode);
+//free(Ncrenode);
+if(update!=1&&modified!=1){
+MNode *delnode;
+delnode=mhead;
+MnNode *Ndelnode;
+Ndelnode=mnhead;
+
+deleted=1;//DELETE LOG: base 기준으로 
+while(delnode){
+while(Ndelnode){
+if(Ndelnode->inum==delnode->inum){//existing file in new&base  
+printf("dell Nnum:%d   inum: %d\n",Ndelnode->inum,delnode->inum);
+deleted=0;
+}
+Ndelnode=Ndelnode->next;
 
 
-    printf("-------------------------COMPARE ENDS----------------------\n");
+if(deleted==1){//not existing file in new 
+write_logtxt(delnode->listfname,"delete",NULL);
+update=1;
+printf("DELETE LOG!!!!!!!!!!!!!!!!\n");
+break;
+}
+}
+delnode=delnode->next;
+}
+//free(delnode);
+// free(Ndelnode);
 }
 
 
-int scanmondirBASE(char *searchdir,int inityes){
+printf("-------------------------COMPARE ENDS----------------------\n");
+}*/
+
+int scanmondirBASE(char *searchdir,int inityes,binfo[BUFFER_SIZE],int idx){
     printf("-------------------------scanning dir BASE STARTS\n");
-   if(inityes==1)
+    if(inityes==1)
 	mnhead=NULL;////init first!   
-    
+
     char *dirptr;
     dirptr=searchdir+strlen(searchdir);
     *dirptr++='/';
     *dirptr='\0';
     struct tm *t;//시간값 표현하기 위한 구조체
-    
+
     char dirpath[PATH_SIZE];
     char recurdirpath[PATH_SIZE];
-      
+
     struct stat tempstat;
     // struct timeval *renamet;    
     int i;   
@@ -247,7 +257,7 @@ int scanmondirBASE(char *searchdir,int inityes){
     int fcnt=0;
 
     struct stat buf;//SIZE   
-   
+
     int countdirp=0;
     struct dirent **flist;
 
@@ -255,10 +265,11 @@ int scanmondirBASE(char *searchdir,int inityes){
 	fprintf(stderr,"scandir error for %s\n",searchdir);
 	exit(1);
     }
+
     i=0;
     while(i<countdirp){
-	MNode *node=(MNode*)malloc(sizeof(MNode));
-	memset(node,0,sizeof(node));
+	//	MNode *node=(MNode*)malloc(sizeof(MNode));
+	//	memset(node,0,sizeof(node));
 	//printf("counting file num in %s dir..\n",searchdirbuf);
 	if(!strcmp(flist[i]->d_name,".")||!strcmp(flist[i]->d_name,"..")){
 	    i++;
@@ -282,70 +293,76 @@ int scanmondirBASE(char *searchdir,int inityes){
 	}
 	strcpy(dirptr,flist[i]->d_name);
 
-	memset(node->listfname,0,PATH_SIZE);
-	strcpy(node->listfname,flist[i]->d_name);
-	printf("node->listfname:%s\n",node->listfname);
+	//memset(node->listfname,0,PATH_SIZE);
+	strcpy(base[*idx].listfname,flist[i]->d_name);
+	printf("node->listfname:%s\n",base[*indx].listfname);
 
 	//	if(S_ISREG(tempstat.st_mode)){
-	memset(node->listfpath,0,PATH_SIZE);
+	//memset(node->listfpath,0,PATH_SIZE);
 	//strcpy(node->dirpath,searchdir);
-	strcpy(node->listfpath,searchdir);
+	strcpy(base[*idx].listfpath,searchdir);
 
 	fsize=0;
-	fsize=stat(node->listfpath,&buf);//SIZE 
+	fsize=stat(base[*idx].listfpath,&buf);//SIZE 
 
 
-	node->fsize=0;
-	node->fsize=buf.st_size;//SIZE
+	//node->fsize=0;
+	base[*idx].fsize=buf.st_size;//SIZE
 
-	memset(node->mtime,0,TM_SIZE);
-	strcpy(node->mtime,ctime(&buf.st_mtime));
-	printf("mtime:%s\n",node->mtime);
+	//memset(node->mtime,0,TM_SIZE);
+	strcpy(base[*idx].mtime,ctime(&buf.st_mtime));
+	printf("mtime:%s\n",base[*idx].mtime);
 
-	node->inum=buf.st_ino;//inode num
+	base[*idx].inum=buf.st_ino;//inode num
 
 
-	printf("fize(buf.st_size):%d\n",node->fsize);
-	printf("listfpath:%s\n",node->listfpath);
+	printf("fize(buf.st_size):%d\n",base[*idx].fsize);
+	printf("listfpath:%s\n",base[*idx].listfpath);
 
-	Mlist_insert(node);
+	*idx+=1;
+	//	Mlist_insert(node);
 	//	}
 
 	if((buf.st_mode&S_IFDIR)==S_IFDIR){
-	  //  sprintf(recurdirpath,"%s/%s",searchdir,flist[i]->d_name);
+	    //  sprintf(recurdirpath,"%s/%s",searchdir,flist[i]->d_name);
 
 	    //indent++;
 	    //strcpy(node->listfpath,temppath);
-	    printf("listfpath:%sis directory\n",node->listfpath);
+	    //	    printf("listfpath:%sis directory\n",node->listfpath);
 
 	    printf("~~~~~~~~~~~~~SCANDIR RECURSIVE FOR BASE~~~~~~~~~~~~~\n");
 
-	    scanmondirBASE(searchdir,0);
+	    scanmondirBASE(searchdir,0,idx);
 
 	}
 
 	i++;
     }
-   // indent--;
-   // chdir("..");
+    /*for(int j=0;j<countdirp;j++){
+      free(flist[j]);
+      }
+      free(flist[i]);*/
+
+    // indent--;
+    // chdir("..");
     dirptr[-1]=0;
     printf("-------------------------scanning dir BASE ENDS\n");
-return 0;
+    return 0;
 }
-int scanmondirNEW(char *searchdir,int inityes){
+int scanmondirNEW(char *searchdir,int inityes,ninfo[BUFFER_SIZE],int idx){
+    printf("-------------------------scanning dir BASE STARTS\n");
     if(inityes==1)
-	mnhead=NULL;////init first!    
-    
-    printf("-------------------------scanning dir NEW STARTS\n");
+	mnhead=NULL;////init first!   
+
     char *dirptr;
     dirptr=searchdir+strlen(searchdir);
     *dirptr++='/';
     *dirptr='\0';
     struct tm *t;//시간값 표현하기 위한 구조체
-    
+
     char dirpath[PATH_SIZE];
     char recurdirpath[PATH_SIZE];
-      
+
     struct stat tempstat;
     // struct timeval *renamet;    
     int i;   
@@ -354,18 +371,19 @@ int scanmondirNEW(char *searchdir,int inityes){
     int fcnt=0;
 
     struct stat buf;//SIZE   
-   
+
     int countdirp=0;
     struct dirent **flist;
 
-    if((countdirp=scandir(searchdir,&flist,NULL,alphasort))<0){
+    if((countdirp=scandir(searchdir,&flist,0,alphasort))<0){
 	fprintf(stderr,"scandir error for %s\n",searchdir);
-	//exit(1);
+	exit(1);
     }
+
     i=0;
     while(i<countdirp){
-	MnNode *node=(MnNode*)malloc(sizeof(MnNode));
-	memset(node,0,sizeof(node));
+	//	MNode *node=(MNode*)malloc(sizeof(MNode));
+	//	memset(node,0,sizeof(node));
 	//printf("counting file num in %s dir..\n",searchdirbuf);
 	if(!strcmp(flist[i]->d_name,".")||!strcmp(flist[i]->d_name,"..")){
 	    i++;
@@ -389,81 +407,64 @@ int scanmondirNEW(char *searchdir,int inityes){
 	}
 	strcpy(dirptr,flist[i]->d_name);
 
-	memset(node->listfname,0,PATH_SIZE);
-	strcpy(node->listfname,flist[i]->d_name);
-	printf("node->listfname:%s\n",node->listfname);
+	//memset(node->listfname,0,PATH_SIZE);
+	strcpy(neww[*idx].listfname,flist[i]->d_name);
+	printf("node->listfname:%s\n",neww[*indx].listfname);
 
 	//	if(S_ISREG(tempstat.st_mode)){
-	memset(node->listfpath,0,PATH_SIZE);
+	//memset(node->listfpath,0,PATH_SIZE);
 	//strcpy(node->dirpath,searchdir);
-	strcpy(node->listfpath,searchdir);
+	strcpy(neww[*idx].listfpath,searchdir);
 
 	fsize=0;
-	fsize=stat(node->listfpath,&buf);//SIZE 
+	fsize=stat(neww[*idx].listfpath,&buf);//SIZE 
 
 
-	node->fsize=0;
-	node->fsize=buf.st_size;//SIZE
+	//node->fsize=0;
+	neww[*idx].fsize=buf.st_size;//SIZE
 
-	memset(node->mtime,0,TM_SIZE);
-	strcpy(node->mtime,ctime(&buf.st_mtime));
-	printf("mtime:%s\n",node->mtime);
+	//memset(node->mtime,0,TM_SIZE);
+	strcpy(neww[*idx].mtime,ctime(&buf.st_mtime));
+	printf("mtime:%s\n",neww[*idx].mtime);
 
-	node->inum=buf.st_ino;//inode num
+	neww[*idx].inum=buf.st_ino;//inode num
 
 
-	printf("fize(buf.st_size):%d\n",node->fsize);
-	printf("listfpath:%s\n",node->listfpath);
+	printf("fize(buf.st_size):%d\n",neww[*idx].fsize);
+	printf("listfpath:%s\n",neww[*idx].listfpath);
 
-	Mnlist_insert(node);
+	*idx+=1;
+	//	Mlist_insert(node);
 	//	}
 
 	if((buf.st_mode&S_IFDIR)==S_IFDIR){
-	  //  sprintf(recurdirpath,"%s/%s",searchdir,flist[i]->d_name);
+	    //  sprintf(recurdirpath,"%s/%s",searchdir,flist[i]->d_name);
 
 	    //indent++;
 	    //strcpy(node->listfpath,temppath);
-	    printf("listfpath:%sis directory\n",node->listfpath);
+	    //	    printf("listfpath:%sis directory\n",node->listfpath);
 
-	    printf("~~~~~~~~~~~~~SCANDIR RECURSIVE FOR NEW~~~~~~~~~~~~~\n");
+	    printf("~~~~~~~~~~~~~SCANDIR RECURSIVE FOR BASE~~~~~~~~~~~~~\n");
 
-	    scanmondirNEW(searchdir,0);
+	    scanmondirNEW(searchdir,0,idx);
 
 	}
 
 	i++;
     }
-   // indent--;
-   // chdir("..");
+    /*for(int j=0;j<countdirp;j++){
+      free(flist[j]);
+      }
+      free(flist[i]);*/
+
+    // indent--;
+    // chdir("..");
     dirptr[-1]=0;
-    printf("-------------------------scanning dir NEW ENDS\n");
-return 0;
+    printf("-------------------------scanning dir BASE ENDS\n");
+    return 0;
 }
 
-void Mlist_insert(MNode *newNode){//list에 node추가
-    newNode->next=NULL;
-    if(mhead==NULL)
-	mhead=newNode;
-    else{
-	MNode *listF;
-	listF=mhead;
-	while(listF->next!=NULL)
-	    listF=listF->next;
-	listF->next=newNode;
-    }
-}
-void Mnlist_insert(MnNode *newNode){//list에 node추가
-    newNode->next=NULL;
-    if(mnhead==NULL)
-	mnhead=newNode;
-    else{
-	MnNode *listF;
-	listF=mnhead;
-	while(listF->next!=NULL)
-	    listF=listF->next;
-	listF->next=newNode;
-    }
-}
+
 void get_time(char *str,char *status){
     char timestr[TM_SIZE];
     time_t timer=time(NULL);
