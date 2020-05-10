@@ -9,7 +9,7 @@ int main(void){
     char wdir[PATH_SIZE];
     char mondir[PATH_SIZE];
     //    char logpath[PATH_SIZE];//log.txt path name
-    //    pid_t pid;
+        pid_t pid;
 
     memset(wdir,0,PATH_SIZE);
     memset(mondir,0,PATH_SIZE);
@@ -28,13 +28,18 @@ int main(void){
     printf("checkdir:%s\n",mondir);
     scanmondirBASE(mondir,1);
     //chdir(wdir);
-    startdemon(wdir,mondir);
+    switch(pid=vfork()){
+	case 0:
+	    printf("I'm child. My PID is %d\n",getpid());
+	    startdemon(wdir,mondir);
+	default:
+	    ssu_mntr_play();
+    }
 
     //옵션입력으로 넘어감.
     return 0;
 }
 void startdemon(char *curdir,char *checkdir){
-    pid_t pid;
     char wdir[PATH_SIZE];
     char mondir[PATH_SIZE];
     memset(wdir,0,PATH_SIZE);
@@ -42,21 +47,21 @@ void startdemon(char *curdir,char *checkdir){
     getcwd(wdir,PATH_SIZE);//***절대경로 상대경로 입력시 모두 동작하도록 수정해야함
     sprintf(mondir,"%s/check",wdir);
     int bfcnt,nfcnt;
-    /*    int fd, maxfd;
+    int fd, maxfd;
 
-	  pid_t pid;
+    pid_t pid;
 
-	  printf("forlogtxt");
+    printf("forlogtxt");
     //printf(file);//debug
 
     //fork()로 자식 프로세스를 생성한다. 
     //이 함수는 한 번 호출되나 두 개의 리턴값을 리턴하는 함수다.
     //자식에게 리턴하는값은 0, 부모에게는 새 자식프로세스의 ID. 
     if((pid=fork())<0)//프로세스 생성 실패시 -1리턴.
-    exit(0);
+	exit(0);
     //부모프로세스를 종료시킴.
     else if(pid!=0)
-    exit(0);
+	exit(0);
     pid=getpid();
     //터미널 종료시 signal의 영향을 받지 않는다.
     signal(SIGHUP, SIG_IGN);
@@ -66,47 +71,43 @@ void startdemon(char *curdir,char *checkdir){
     maxfd=getdtablesize();
 
     for(fd=0;fd<maxfd;fd++)
-    close(fd);
+	close(fd);
 
     if(chdir("/")==-1){
-    printf("chdir error\n");
-    exit(1);
+	printf("chdir error\n");
+	exit(1);
     }
 
     umask(0);
     //setsid로 새로운 세션만들고,
     //현재프로세스(자식)의 세션의 PID가 제어권을 가지도록 한다.
-    if(setsid()==-1)
-    exit(0);
+    if(setsid()==-1){
+	fprintf(stderr,"set sid error\n");
+	exit(0);
+    }
 
     fd=open("/dev/null",O_RDWR);
     dup(0);
     dup(0);
-    */
-    /*  switch(pid=fork()){
-	case 0:
-	printf("I'm child. My PID is %d\n",getpid());*/
-    while(1){
-	sleep(1);
-	printf("++++++++++++++++++++++++++++++++++whileloop++++++++++++++++++++\n");
-	printf("check:%s\n",mondir);
-	//	chdir(ckdir);
-	scanmondirNEW(mondir,1);//1초 주기로 new스캔+base&new비교
-	forlogtxt();
-	//	chdir(curdir);
 
-	if(update==1){//if update, scan base again.
-	    update=0;//init
-	    printf("update:%d\n",update);
-	    scanmondirBASE(mondir,1);
-	}
+	    while(1){
+		sleep(1);
+		printf("++++++++++++++++++++++++++++++++++whileloop++++++++++++++++++++\n");
+		printf("check:%s\n",mondir);
+		//	chdir(ckdir);
+		scanmondirNEW(mondir,1);//1초 주기로 new스캔+base&new비교
+		forlogtxt();
+		//	chdir(curdir);
 
-	printf("ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
+		if(update==1){//if update, scan base again.
+		    update=0;//init
+		    printf("update:%d\n",update);
+		    scanmondirBASE(mondir,1);
+		}
 
-    }
-    //	default:*/
-    ssu_mntr_play();
-    //    }
+		printf("ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
+
+	    }
 
 }
 void forlogtxt(void){//cmp base&new 
@@ -182,23 +183,23 @@ void forlogtxt(void){//cmp base&new
 	while(Ncrenode!=NULL){
 	    while(crenode!=NULL){//create time fprint
 		printf("Pfname:n %s b %s\n",Ncrenode->listfname,crenode->listfname); 
-		if(Ncrenode->inum==crenode->inum){//existing file in base
+		if(Ncrenode->listfname!=crenode->listfname){//existing file in base
 		    printf("CrE Ninum:%d   inum: %d\n",Ncrenode->inum,crenode->inum);
 		    printf("fname:n %s b %s\n",Ncrenode->listfname,crenode->listfname); 
-		    newfile=0;
+		    newfile=1;
+		    write_logtxt(Ncrenode->listfname,"create",NULL);
+		    update=1;
+		    printf("CREATE LOG!!!!!!!!!!!!!!!!\n");
+		    break;
 		}
 		crenode=crenode->next;
 		printf("working create...\n");
 
-		if(newfile==1){//not existing file in base
-		    write_logtxt(Ncrenode->listfname,"create",NULL);
-		    update=1;
-		    break;
-		    printf("CREATE LOG!!!!!!!!!!!!!!!!\n");
-		}
-		Ncrenode=Ncrenode->next;
-		printf("next Nnode scan working create...\n");
+		//if(newfile==1){//not existing file in base
 	    }
+	    Ncrenode=Ncrenode->next;
+	    printf("next Nnode scan working create...\n");
+	    // }
 	}
 	//free(crenode);
 	//free(Ncrenode);
@@ -222,8 +223,8 @@ void forlogtxt(void){//cmp base&new
 		    Ndelnode=Ndelnode->next;
 
 
-		  //  if(deleted==1){//not existing file in new 
-		   // }
+		    //  if(deleted==1){//not existing file in new 
+		    // }
 		    delnode=delnode->next;
 		}
 	    }
@@ -520,9 +521,9 @@ void write_logtxt(char *fname, char *status,char *mtimeifmod){
 	exit(1);
     }
     //if(!strcmp(status,"modify"))
-//	strcpy(timestr,mtimeifmod);
-  //  else
-	get_time(timestr,status);//current time
+    //	strcpy(timestr,mtimeifmod);
+    //  else
+    get_time(timestr,status);//current time
 
     fseek(fp,0,SEEK_END);
     fprintf(fp,"%s [%s _%s]\n",timestr,fname,status);

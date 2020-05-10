@@ -1039,7 +1039,7 @@ void scanningTdir(char *searchdir){
     memset(recopt,0,OPT_SIZE);
     memset(newdir,0,PATH_SIZE);
     newNode=(Node*)malloc(sizeof(Node));
-    printf("-----------------------scanning trash/info dir------\n");
+   // printf("-----------------------scanning trash/info dir------\n");
     strcpy(curdir,getcwd(NULL,0));//***절대경로 상대경로 입력시 모두 동작하도록 수정해야함
     //printf("curdir:%s\n",curdir);
     sprintf(checkdir,"%s/check",curdir);
@@ -1069,7 +1069,7 @@ void scanningTdir(char *searchdir){
     i=0;
     //info dir의 파일이름, 삭제시간, 수정시간 각 노드 만들어주기
     while(i<countdirp){
-	printf("counting file num in info dir..\n");
+	//printf("counting file num in info dir..\n");
 	if(!strcmp(flist[i]->d_name,".")||!strcmp(flist[i]->d_name,"..")){
 	    i++;
 	    continue;
@@ -1179,7 +1179,7 @@ void scanningTdir(char *searchdir){
 	    //	    int test=atoi(optldtime);
 	    //	    printf("////////INT/debug:%d\n",test);
 	    optldtimeInt=atoi(optldtime);
-	    printf("////////INT/debug:%d\n",optldtimeInt);
+	 //   printf("////////INT/debug:%d\n",optldtimeInt);
 	    ///////////////////////////////////////////////
 	    //year=year.tm_year+1900;
 	    /* node->delt.tm_year=year;
@@ -1207,12 +1207,12 @@ void scanningTdir(char *searchdir){
 	    if(!strcmp(node->listfname,onlyfname)){
 		dupindex++;
 		node->dupindex=dupindex;//중복횟수 셈
-		printf("node->dupindex:%d\n",node->dupindex);
+		//printf("node->dupindex:%d\n",node->dupindex);
 		//sprintf(dup1onlyfname,"%d_%s",dupindex,onlyfname);
 		//rename(onlyfname,dup1onlyfname);
 	    }
 
-	    list_insert(node);
+	/*    list_insert(node);
 	    printf("flist[i]->d_name:%s\n",flist[i]->d_name);
 	    printf("listfpath:%s\n",node->listfpath);
 	    printf("optldt:%d\n",node->optldt);
@@ -1226,7 +1226,7 @@ void scanningTdir(char *searchdir){
 	    printf("node->delt.tm_mday:%d\n",node->delt.tm_mday);
 	    printf("node->delt.tm_hour:%d\n",node->delt.tm_hour);
 	    printf("node->delt.tm_min:%d\n",node->delt.tm_min);
-	    printf("node->delt.tm_min:%d\n",node->delt.tm_min);
+	    printf("node->delt.tm_min:%d\n",node->delt.tm_min);*/
 	}
 	else{
 	    fprintf(stderr,"%s is not a regular file.\n",flist[i]->d_name);
@@ -1234,7 +1234,7 @@ void scanningTdir(char *searchdir){
 	}
 	i++;
     }
-    printf("-----------------------scanning trash/info dir ends------\n");
+    //printf("-----------------------scanning trash/info dir ends------\n");
 }
 void list_insert(Node *newNode){//list에 node추가
     newNode->next=NULL;
@@ -1349,7 +1349,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
 	    Clist_insert(node);
 	    //printf("fize(buf.st_size):%d\n",node->fsize);
-	    printf("listfpath:%s\n",node->listfpath);
+	    //printf("listfpath:%s\n",node->listfpath);
 	    memset(relativepath,0,PATH_SIZE);	
 	    makeRelativeP(node->listfpath,relativepath,delcurdir);
 	    memset(node->relP,0,PATH_SIZE);
@@ -1435,7 +1435,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
     }
     indent--;
     chdir("..");
-     printf("-------------------------scanning dir for CNode list ends\n");
+     //printf("-------------------------scanning dir for CNode list ends\n");
 }
 void Clist_insert(CNode *newNode){//list에 node추가
     newNode->next=NULL;
