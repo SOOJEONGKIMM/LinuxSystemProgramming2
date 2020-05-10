@@ -1,7 +1,7 @@
 #include"./ssu_mntr.h"
 
 
-void scanmondir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *delcurdir);
+//void scanmondir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *delcurdir);
 int update;
 
 int main(void){
@@ -26,16 +26,21 @@ int main(void){
     //chdir(mondir);
     //    mkdir(checkdir,0744);
     printf("checkdir:%s\n",mondir);
-    chdir(wdir);
-    scanmondir(NULL,0,TREE,1,wdir);
-    chdir(wdir);
-    startdemon(wdir);
+    scanmondirBASE(mondir,1);
+    //chdir(wdir);
+    startdemon(wdir,mondir);
 
     //옵션입력으로 넘어감.
     return 0;
 }
-void startdemon(char *curdir){
+void startdemon(char *curdir,char *checkdir){
     pid_t pid;
+    char wdir[PATH_SIZE];
+    char mondir[PATH_SIZE];
+    memset(wdir,0,PATH_SIZE);
+    memset(mondir,0,PATH_SIZE);
+    getcwd(wdir,PATH_SIZE);//***절대경로 상대경로 입력시 모두 동작하도록 수정해야함
+    sprintf(mondir,"%s/check",wdir);
     /*    int fd, maxfd;
 
 	  pid_t pid;
@@ -83,13 +88,18 @@ void startdemon(char *curdir){
     while(1){
 	//sleep(1);
 	printf("++++++++++++++++++++++++++++++++++whileloop++++++++++++++++++++\n");
-	forlogtxt(NULL,0,TREE,1,curdir);
-	if(update==1){
-	    update=0;//init
-	    printf("update:%d\n",update);
-	    scanmondir(NULL,0,TREE,1,curdir);
-	}
+	printf("check:%s\n",mondir);
+//	chdir(ckdir);
+	scanmondirNEW(mondir,1);//1초 주기로 new스캔+base&new비교
+//	chdir(curdir);
+	forlogtxt();
 
+		if(update==1){//if update, scan base again.
+		update=0;//init
+		printf("update:%d\n",update);
+		scanmondirBASE(mondir,1);
+		}
+		
 	printf("ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
 
     }
@@ -98,255 +108,154 @@ void startdemon(char *curdir){
     //    }
 
 }
-void forlogtxt(char *searchdir,int depth,int sizeoptflag,int indentinit,char *delcurdir){//SIZE
-    ////init first!   
-    struct stat crebuf; //linkedlist stat(create log)
-    int newfile,deleted,inum; 
-    char mtimestr[TM_SIZE];
-    char curdir[PATH_SIZE];
-    char checkdir[PATH_SIZE];
-    char searchdirbuf[PATH_SIZE];
-    static int indent;
-    static int depthcnt;//recursive num
-    if(indentinit==1){
-	indent=0;//처음으로 스캔시작할때만 초기화되도록 
-    }
-    struct tm *t;//시간값 표현하기 위한 구조체
-    char temppath[PATH_SIZE];
-    char treefname[BUFFER_SIZE];
-    char relativepath[PATH_SIZE];
-    //struct stat statbuf;    
-    struct stat tempstat;
-    // struct timeval *renamet;    
-    int i;   
-    char listfname[FILE_SIZE];
-    int recoptl=1;//init
-    int fsize;//SIZE
-    int fcnt=0;
-    struct stat buf;//SIZE
-    struct stat checkemptybuf;//TREE 빈폴더인경우 -----표시를 하지 않는다. 
-    int emptydir=0;
-    memset(curdir,0,PATH_SIZE);
-    memset(checkdir,0,PATH_SIZE);
-    memset(temppath,0,PATH_SIZE); 
-    strcpy(curdir,getcwd(NULL,0));
-    sprintf(checkdir,"%s/check",curdir);
-    //chdir(checkdir);
-    printf("-------------------------scanning dir for CNode list\n");
-    printf("curdir:%s\n",curdir);
-    memset(searchdirbuf,0,PATH_SIZE);
-    if(searchdir==NULL&&sizeoptflag!=TREE)
-	strcpy(searchdirbuf,curdir);
-    else if(searchdir==NULL&&sizeoptflag==TREE)////////////////////////////////////////////////
-	strcpy(searchdirbuf,checkdir);
-    else
-	sprintf(searchdirbuf,"%s/%s",curdir,searchdir);
+void forlogtxt(void){//cmp base&new 
 
-    int countdirp=0;
-    struct dirent **flist;
-    printf("searchdirbuf:%s\n",searchdirbuf);
-    if(chdir(searchdirbuf)<0){//returns 0 if success
-	fprintf(stderr,"DIR:%s can't be found.\n",searchdirbuf);
-	perror("chdir");
-    }
-    if((countdirp=scandir(searchdirbuf,&flist,0,alphasort))<0){
-	fprintf(stderr,"scandir error for %s\n",searchdirbuf);
-	exit(1);
-    }
-    i=0;
-    //info dir의 파일이름, 삭제시간, 수정시간 각 노드 만들어주기
-    while(i<countdirp){
+    printf("-------------------------COMPARE STARTS----------------------\n");
 
-	//printf("counting file num in %s dir..\n",searchdirbuf);
-	if(!strcmp(flist[i]->d_name,".")||!strcmp(flist[i]->d_name,"..")){
-	    i++;
-	    continue;
-	}
-	if(!strcmp(flist[i]->d_name,".git")){
-	    i++;
-	    continue;
-	}
-	if(!strcmp(flist[i]->d_name,"Makefile")){
-	    i++;
-	    continue;
-	}
-	if(!strcmp(flist[i]->d_name,"a.out")){
-	    i++;
-	    continue;
-	}
-	if(!strcmp(flist[i]->d_name,"log.txt")){
-	    i++;
-	    continue;
-	}
-	printf("flist[i]->d_name):%s\n",flist[i]->d_name);
-	//if(access(flist[i]->d_name,F_OK)!=0)
-	//  exit(1);
+    //MNode *crenode=(MNode*)malloc(sizeof(MNode));
+    //memset(crenode,0,sizeof(crenode));
+    int newfile,deleted,modified; 
+    MNode *crenode;
+    crenode=mhead;
+    MnNode *Ncrenode;
+    Ncrenode=mnhead;
 
-	memset(temppath,0,PATH_SIZE);
-	if(realpath(flist[i]->d_name,temppath)==0){
-	    fprintf(stderr,"real path error for %s\n",flist[i]->d_name);
-	    //  exit(1);
-	}
-	if(lstat(temppath,&tempstat)<0){
-	    fprintf(stderr,"lstat error for %s\n",temppath);
-	    // exit(1);
-	}
+    
 
-	//MNode *crenode=(MNode*)malloc(sizeof(MNode));
-	//memset(crenode,0,sizeof(crenode));
-	MNode *crenode;
-	crenode=mhead;
+    modified=0;
+    if(update!=1){
+	MNode *modnode;
+	modnode=mhead;
+	MnNode *Nmodnode;
+	Nmodnode=mnhead;
 
-	newfile=1;
-	deleted=0;
-	while(crenode){//create time fprint
-	    stat(crenode->listfpath, &crebuf);
-	    if(crebuf.st_ino==crenode->inum){
-		newfile=0;
-	    }
-	    if(!strcmp(crenode->listfname,flist[i]->d_name)){//same fname
-		if(!strcmp(crenode->dirpath,searchdirbuf)){//same dir
-		    if(access(crenode->listfpath,F_OK)!=0){//but no access
-			deleted=1;
+	while(modnode){
+	    while(Nmodnode){
+printf("mfname:n %s b %s\n",Ncrenode->listfname,crenode->listfname);
+printf("modnode->inum:%d Nmodnode->inum %d\n",modnode->inum,Nmodnode->inum);
+		if(modnode->inum==Nmodnode->inum){//same file  
+		    if(strcmp(modnode->mtime,Nmodnode->mtime)){//but mtime change
+			write_logtxt(modnode->listfname,"modify",NULL);
+			update=1;
+			modified=1;
+			printf("MODIFY LOG!!!!!!!!!!!!!!!!\n");
 			break;
 		    }
+		    if(strcmp(modnode->listfpath,Nmodnode->listfpath)){//but path change
+			write_logtxt(modnode->listfname,"modify",NULL);
+			update=1;
+			modified=1;
+			printf("MODIFY LOG!!!!!!!!!!!!!!!!\n");
+			break;
+		    }
+		    if(strcmp(modnode->listfname,Nmodnode->listfname)){//fname change
+			write_logtxt(modnode->listfname,"modify",NULL);
+			update=1;
+			modified=1;
+			printf("MODIFY LOG!!!!!!!!!!!!!!!!\n");
+			break;
+		    }
+
 		}
+Nmodnode=Nmodnode->next;
+		
+	   
+	    modnode=modnode->next;
+}
+	}
+    //free(modnode);
+    //free(Nmodnode);
+    }
+newfile=1;//CREATE LOG: new 기준으로 
+    while(Ncrenode!=NULL){
+	printf("what\n");
+	while(crenode!=NULL){//create time fprint
+	    printf("is wrong?\n");
+printf("Pfname:n %s b %s\n",Ncrenode->listfname,crenode->listfname); 
+	    if(Ncrenode->inum==crenode->inum){//existing file in base
+		printf("CrE Ninum:%d   inum: %d\n",Ncrenode->inum,crenode->inum);
+		printf("fname:n %s b %s\n",Ncrenode->listfname,crenode->listfname); 
+		newfile=0;
 	    }
 	    crenode=crenode->next;
-	}
-	//free(crenode);
-	if(newfile==1){
-	    chdir(curdir);
-	    write_logtxt(flist[i]->d_name,"create",NULL);
+	    printf("working create...\n");
+	
+	if(newfile==1){//not existing file in base
+	    write_logtxt(Ncrenode->listfname,"create",NULL);
 	    update=1;
-	    chdir(searchdirbuf);
+	    printf("CREATE LOG!!!!!!!!!!!!!!!!\n");
 	}
-	if(deleted==1){
-	    chdir(curdir);
-	    write_logtxt(crenode->listfname,"delete",NULL);
-	    update=1;
-	    chdir(searchdirbuf);
-	}
-
-
-/*	MNode *lognode=(MNode*)malloc(sizeof(MNode));
-	memset(lognode,0,sizeof(lognode));
-	lognode=mhead;
-
-	stat(lognode->listfpath,&buf);
-
-	while(lognode){
-	    if(stat(lognode->listfpath,&buf)<0){
-		chdir(curdir);
-		write_logtxt(lognode->listfname,"modify",NULL);
-		update=1;
-		mhead=NULL;
-		chdir(searchdirbuf);
-	    }
-	    else{	
-		inum=buf.st_ino;
-		//	printf("node->listfname:%s   ",lognode->listfname);
-		//	printf("nodeinum:%d   inum: %d\n",lognode->inum,inum);
-		if(lognode->inum==inum){
-		    /////////////////		  if(strcmp(lognode->listfname,flist[i]->d_name)){//이름변경 
-		    	       t=localtime(&buf.st_mtime);
-			       fprintf(fp,"[%04d-%02d-%02d %02d:%02d:%02d][modify_%s]\n", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,lognode->listfname);
-			       } //////////////////////
-
-		    if(strcmp(lognode->mtime,ctime(&buf.st_mtime))){//수정시각변화 
-			t=localtime(&buf.st_mtime);
-			memset(mtimestr,0,TM_SIZE);
-			sprintf(mtimestr,"[%04d-%02d-%02d %02d:%02d:%02d]", t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-			chdir(curdir);
-			write_logtxt(lognode->listfname,"modify",mtimestr);
-			update=1;
-			mhead=NULL;
-			chdir(searchdirbuf);
-		    }
-		    //	    printf("mtimechange:%s   %s\n",lognode->mtime,ctime(&buf.st_mtime));//수정시각변화 
-
-
-		}
-	    }
-	    lognode=lognode->next;
-	}	  
-	free(lognode);
-*/
-	if((tempstat.st_mode&S_IFDIR)==S_IFDIR){
-
-	    indent++;
-
-
-	    printf("~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
-
-	    if(sizeoptflag==TREE)
-		forlogtxt(flist[i]->d_name,depth,TREE,0,delcurdir);
-
-	}
-
-	i++;
+	Ncrenode=Ncrenode->next;
+	    printf("next Nnode scan working create...\n");
+}
     }
-    indent--;
-    chdir("..");
-    printf("-------------------------scanning dir for CNode list ends\n");
+    //free(crenode);
+    //free(Ncrenode);
+    if(update!=1&&modified!=1){
+	MNode *delnode;
+	delnode=mhead;
+	MnNode *Ndelnode;
+	Ndelnode=mnhead;
+
+	deleted=1;//DELETE LOG: base 기준으로 
+	while(delnode){
+	    while(Ndelnode){
+		if(Ndelnode->inum==delnode->inum){//existing file in new&base  
+		    printf("dell Nnum:%d   inum: %d\n",Ndelnode->inum,delnode->inum);
+		    deleted=0;
+		}
+		Ndelnode=Ndelnode->next;
+	    
+
+	    if(deleted==1){//not existing file in new 
+		write_logtxt(delnode->listfname,"delete",NULL);
+		update=1;
+		printf("DELETE LOG!!!!!!!!!!!!!!!!\n");
+		break;
+	    }
+	    delnode=delnode->next;
+}
+	}
+    //free(delnode);
+   // free(Ndelnode);
+    }
+
+
+    printf("-------------------------COMPARE ENDS----------------------\n");
 }
 
-void scanmondir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *delcurdir){//SIZE
-    ////init first!    
-    char curdir[PATH_SIZE];
-    char checkdir[PATH_SIZE];
-    char searchdirbuf[PATH_SIZE];
-    static int indent;
-    static int depthcnt;//recursive num
-    if(indentinit==1){
-	indent=0;//처음으로 스캔시작할때만 초기화되도록 
-	mhead=NULL;
-    }
+
+int scanmondirBASE(char *searchdir,int inityes){
+    printf("-------------------------scanning dir BASE STARTS\n");
+   if(inityes==1)
+	mnhead=NULL;////init first!   
+    
+    char *dirptr;
+    dirptr=searchdir+strlen(searchdir);
+    *dirptr++='/';
+    *dirptr='\0';
     struct tm *t;//시간값 표현하기 위한 구조체
-    char temppath[PATH_SIZE];
-    char treefname[BUFFER_SIZE];
-    char relativepath[PATH_SIZE];
+    
     char dirpath[PATH_SIZE];
-    //struct stat statbuf;    
+    char recurdirpath[PATH_SIZE];
+      
     struct stat tempstat;
     // struct timeval *renamet;    
     int i;   
     char listfname[FILE_SIZE];
-    int recoptl=1;//init
     int fsize;//SIZE
     int fcnt=0;
 
-    struct stat buf;//SIZE
-    struct stat checkemptybuf;//TREE 빈폴더인경우 -----표시를 하지 않는다. 
-    int emptydir=0;
-    memset(curdir,0,PATH_SIZE);
-    memset(checkdir,0,PATH_SIZE);
-    memset(temppath,0,PATH_SIZE); 
-    strcpy(curdir,getcwd(NULL,0));
-    sprintf(checkdir,"%s/check",curdir);
-    printf("-------------------------scanning dir for CNode list\n");
-    printf("curdir:%s\n",curdir);
-    memset(searchdirbuf,0,PATH_SIZE);
-    if(searchdir==NULL&&sizeoptflag!=TREE)
-	strcpy(searchdirbuf,curdir);
-    else if(searchdir==NULL&&sizeoptflag==TREE)////////////////////////////////////////////////
-	strcpy(searchdirbuf,checkdir);
-    else
-	sprintf(searchdirbuf,"%s/%s",curdir,searchdir);
-
+    struct stat buf;//SIZE   
+   
     int countdirp=0;
     struct dirent **flist;
 
-    if(chdir(searchdirbuf)<0){//returns 0 if success
-	fprintf(stderr,"DIR:%s can't be found.\n",searchdirbuf);
-	perror("chdir");
-    }
-    if((countdirp=scandir(searchdirbuf,&flist,0,alphasort))<0){
-	fprintf(stderr,"scandir error for %s\n",searchdirbuf);
+    if((countdirp=scandir(searchdir,&flist,0,alphasort))<0){
+	fprintf(stderr,"scandir error for %s\n",searchdir);
 	exit(1);
     }
     i=0;
-    //info dir의 파일이름, 삭제시간, 수정시간 각 노드 만들어주기
     while(i<countdirp){
 	MNode *node=(MNode*)malloc(sizeof(MNode));
 	memset(node,0,sizeof(node));
@@ -371,29 +280,17 @@ void scanmondir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *d
 	    i++;
 	    continue;
 	}
+	strcpy(dirptr,flist[i]->d_name);
 
-	memset(temppath,0,PATH_SIZE);
-	if(realpath(flist[i]->d_name,temppath)==0){
-	    fprintf(stderr,"real path error for %s\n",flist[i]->d_name);
-	    //  exit(1);
-	}
-	if(lstat(temppath,&tempstat)<0){
-	    fprintf(stderr,"lstat error for %s\n",temppath);
-	    // exit(1);
-	}
 	memset(node->listfname,0,PATH_SIZE);
 	strcpy(node->listfname,flist[i]->d_name);
 	printf("node->listfname:%s\n",node->listfname);
 
-	//		t=localtime(&tempstat.st_mtime);
-
-	memset(node->listfname,0,PATH_SIZE);
-	strcpy(node->listfname,flist[i]->d_name);
 	//	if(S_ISREG(tempstat.st_mode)){
-	memset(node->dirpath,0,PATH_SIZE);
-	strcpy(node->dirpath,searchdirbuf);
+	memset(node->listfpath,0,PATH_SIZE);
+	//strcpy(node->dirpath,searchdir);
+	strcpy(node->listfpath,searchdir);
 
-	strcpy(node->listfpath,temppath);
 	fsize=0;
 	fsize=stat(node->listfpath,&buf);//SIZE 
 
@@ -413,24 +310,134 @@ void scanmondir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *d
 
 	Mlist_insert(node);
 	//	}
-	if((tempstat.st_mode&S_IFDIR)==S_IFDIR){
 
-	    indent++;
+	if((buf.st_mode&S_IFDIR)==S_IFDIR){
+	  //  sprintf(recurdirpath,"%s/%s",searchdir,flist[i]->d_name);
+
+	    //indent++;
 	    //strcpy(node->listfpath,temppath);
-	    printf("listfpath:%s\n",node->listfpath);
+	    printf("listfpath:%sis directory\n",node->listfpath);
 
-	    printf("~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
+	    printf("~~~~~~~~~~~~~SCANDIR RECURSIVE FOR BASE~~~~~~~~~~~~~\n");
 
-	    if(sizeoptflag==TREE)
-		scanmondir(flist[i]->d_name,depth,TREE,0,delcurdir);
+	    scanmondirBASE(searchdir,0);
 
 	}
 
 	i++;
     }
-    indent--;
-    chdir("..");
-    printf("-------------------------scanning dir for CNode list ends\n");
+   // indent--;
+   // chdir("..");
+    dirptr[-1]=0;
+    printf("-------------------------scanning dir BASE ENDS\n");
+return 0;
+}
+int scanmondirNEW(char *searchdir,int inityes){
+    if(inityes==1)
+	mnhead=NULL;////init first!    
+    
+    printf("-------------------------scanning dir NEW STARTS\n");
+    char *dirptr;
+    dirptr=searchdir+strlen(searchdir);
+    *dirptr++='/';
+    *dirptr='\0';
+    struct tm *t;//시간값 표현하기 위한 구조체
+    
+    char dirpath[PATH_SIZE];
+    char recurdirpath[PATH_SIZE];
+      
+    struct stat tempstat;
+    // struct timeval *renamet;    
+    int i;   
+    char listfname[FILE_SIZE];
+    int fsize;//SIZE
+    int fcnt=0;
+
+    struct stat buf;//SIZE   
+   
+    int countdirp=0;
+    struct dirent **flist;
+
+    if((countdirp=scandir(searchdir,&flist,NULL,alphasort))<0){
+	fprintf(stderr,"scandir error for %s\n",searchdir);
+	//exit(1);
+    }
+    i=0;
+    while(i<countdirp){
+	MnNode *node=(MnNode*)malloc(sizeof(MnNode));
+	memset(node,0,sizeof(node));
+	//printf("counting file num in %s dir..\n",searchdirbuf);
+	if(!strcmp(flist[i]->d_name,".")||!strcmp(flist[i]->d_name,"..")){
+	    i++;
+	    continue;
+	}
+	if(!strcmp(flist[i]->d_name,".git")){
+	    i++;
+	    continue;
+	}
+	if(!strcmp(flist[i]->d_name,"Makefile")){
+	    i++;
+	    continue;
+	}
+	if(!strcmp(flist[i]->d_name,"a.out")){
+	    i++;
+	    continue;
+	}
+	if(!strcmp(flist[i]->d_name,"log.txt")){
+	    i++;
+	    continue;
+	}
+	strcpy(dirptr,flist[i]->d_name);
+
+	memset(node->listfname,0,PATH_SIZE);
+	strcpy(node->listfname,flist[i]->d_name);
+	printf("node->listfname:%s\n",node->listfname);
+
+	//	if(S_ISREG(tempstat.st_mode)){
+	memset(node->listfpath,0,PATH_SIZE);
+	//strcpy(node->dirpath,searchdir);
+	strcpy(node->listfpath,searchdir);
+
+	fsize=0;
+	fsize=stat(node->listfpath,&buf);//SIZE 
+
+
+	node->fsize=0;
+	node->fsize=buf.st_size;//SIZE
+
+	memset(node->mtime,0,TM_SIZE);
+	strcpy(node->mtime,ctime(&buf.st_mtime));
+	printf("mtime:%s\n",node->mtime);
+
+	node->inum=buf.st_ino;//inode num
+
+
+	printf("fize(buf.st_size):%d\n",node->fsize);
+	printf("listfpath:%s\n",node->listfpath);
+
+	Mnlist_insert(node);
+	//	}
+
+	if((buf.st_mode&S_IFDIR)==S_IFDIR){
+	  //  sprintf(recurdirpath,"%s/%s",searchdir,flist[i]->d_name);
+
+	    //indent++;
+	    //strcpy(node->listfpath,temppath);
+	    printf("listfpath:%sis directory\n",node->listfpath);
+
+	    printf("~~~~~~~~~~~~~SCANDIR RECURSIVE FOR NEW~~~~~~~~~~~~~\n");
+
+	    scanmondirNEW(searchdir,0);
+
+	}
+
+	i++;
+    }
+   // indent--;
+   // chdir("..");
+    dirptr[-1]=0;
+    printf("-------------------------scanning dir NEW ENDS\n");
+return 0;
 }
 
 void Mlist_insert(MNode *newNode){//list에 node추가
@@ -440,6 +447,18 @@ void Mlist_insert(MNode *newNode){//list에 node추가
     else{
 	MNode *listF;
 	listF=mhead;
+	while(listF->next!=NULL)
+	    listF=listF->next;
+	listF->next=newNode;
+    }
+}
+void Mnlist_insert(MnNode *newNode){//list에 node추가
+    newNode->next=NULL;
+    if(mnhead==NULL)
+	mnhead=newNode;
+    else{
+	MnNode *listF;
+	listF=mnhead;
 	while(listF->next!=NULL)
 	    listF=listF->next;
 	listF->next=newNode;
