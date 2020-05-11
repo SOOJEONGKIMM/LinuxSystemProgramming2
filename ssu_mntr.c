@@ -362,6 +362,19 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	perror("chdir");
 	exit(1);
     }
+    char relPFile[PATH_SIZE];
+    char abPFile[PATH_SIZE];
+    char tmp2[PATH_SIZE];
+    memset(relPFile,0,PATH_SIZE);
+    memset(abPFile,0,PATH_SIZE);
+    memset(tmp2,0,PATH_SIZE);
+    if(strstr(onlyfname,"/")!=0){//relative path
+	char *tmp1=strrchr(onlyfname,'/');
+	relPtoFile(tmp1,tmp2,"/");
+	//memset(onlyfname,0,PATH_SIZE);
+	memset(onlyfname,0,PATH_SIZE);
+	strcpy(onlyfname,tmp2);
+    }
 
     if(access(onlyfname,F_OK)!=0){
 	printf("%s is not a existing file\n",onlyfname);
@@ -555,7 +568,16 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 
     return 0;
 }
-
+void relPtoFile(char *onlyfname,char *relPFile,char *ch){
+    while(*onlyfname){
+	if(*onlyfname==*ch){
+	    onlyfname++;
+	    ch++;
+	    continue;
+	}
+	*relPFile++=*onlyfname++;
+    }
+}
 int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
     chead=NULL;//init first!  
     char fnamepath[PATH_SIZE];//sizing file name path
@@ -892,45 +914,47 @@ int do_recoverOpt(char *str){
 	printdup=printdup->next;
     }
     printdup=head;
-    if(dupcnt>1){
-	while(printdup){
+
+    while(printdup){
+	if(dupcnt>1){
 	    if(!strcmp(printdup->listfname,onlyfname)){
 		overlapped=1;
 		printdup->dupindex=dupindex;
-	//	printf("dupcnt:%d\n",dupcnt);
+		//	printf("dupcnt:%d\n",dupcnt);
 		printf("%d.  %s\n    %s    %s\n",printdup->dupindex,printdup->listfname,printdup->dtime,printdup->mtime);
 		dupindex++;
 	    }
-	    ptr=NULL;
-	    ptrdup=NULL;
-	    ptr=strstr(printdup->listfname,onlyfname);//strstr has return value
-	    ptrdup=strstr(printdup->listfname,"dup*");
-	    if(ptr!=NULL){
-		if(ptrdup!=NULL){
-		    overlapped=1;
-		    printdup->dupindex=dupindex;//중복횟수 셈
-		    printf("%d.  %s\n    %s    %s\n",printdup->dupindex,printdup->listfname,printdup->dtime,printdup->mtime);
+	}
+	ptr=NULL;
+	ptrdup=NULL;
+	ptr=strstr(printdup->listfname,onlyfname);//strstr has return value
+	ptrdup=strstr(printdup->listfname,"dup*");
+	if(ptr!=NULL){
+	    if(ptrdup!=NULL){
+		overlapped=1;
+		printdup->dupindex=dupindex;//중복횟수 셈
+		printf("%d.  %s\n    %s    %s\n",printdup->dupindex,printdup->listfname,printdup->dtime,printdup->mtime);
 
-		    dupindex++;
-		}
+		dupindex++;
 	    }
-	    ptr=NULL;
-	    ptrdup=NULL;
+	}
+	ptr=NULL;
+	ptrdup=NULL;
+	printdup=printdup->next;
+    }
+    if(overlapped==1){
+	printf("Choose: ");
+	fgets(dupindexpick,OPT_SIZE,stdin);
+	int pick=atoi(dupindexpick);
+	printdup=head;
+	while(printdup){
+	    if(pick==printdup->dupindex)
+		strcpy(duponlyfname,printdup->listfname);
 	    printdup=printdup->next;
 	}
-	if(overlapped==1){
-	    printf("Choose: ");
-	    fgets(dupindexpick,OPT_SIZE,stdin);
-	    int pick=atoi(dupindexpick);
-	    printdup=head;
-	    while(printdup){
-		if(pick==printdup->dupindex)
-		    strcpy(duponlyfname,printdup->listfname);
-		printdup=printdup->next;
-	    }
-	}
-
     }
+
+
     //trashdir로 이동
     if(chdir(filesdir)<0){//returns 0 if success
 	fprintf(stderr,"DIR:%s can't be found.\n",filesdir);
@@ -1026,8 +1050,10 @@ int do_treeOpt(char *str){
 }
 
 int do_helpOpt(char *str){
-
-    printf("helpopt");
+    printf("DELETE [FILENAME] [ENDTIME] [OPTION] (OPTION:-r -i)\n");
+    printf("SIZE [FILENAME] [OPTION] (OPTION:-d)\n");
+    printf("RECOVER [FILENAME] [OPTION] (OPTION:-l)\n");
+    printf("TREE\n");
     return 0;
 }
 void scanningTdir(char *searchdir){

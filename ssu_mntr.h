@@ -149,7 +149,7 @@ void do_sizeOptDIR(char *dirname);
 int do_recoverOpt(char *str);
 int do_treeOpt(char *str);
 int do_helpOpt(char *str);
-void scanningTdir(char *scanningdir);
+void scanningTdir(char *scanningdir);//,int inityes);
 void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *delcurdir);//,static int indent);//,int indent);
 
 

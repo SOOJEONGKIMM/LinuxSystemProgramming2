@@ -27,14 +27,14 @@ int main(void){
     //    mkdir(checkdir,0744);
     // printf("checkdir:%s\n",mondir);
     scanmondirBASE(mondir,1);
-		startdemon(wdir,mondir);
+    startdemon(wdir,mondir);
     //chdir(wdir);
     /*switch(pid=fork()){
-	case 0:
-	   // printf("I'm child. My PID is %d\n",getpid());
-		startdemon(wdir,mondir);
-	default:
-	    ssu_mntr_play();
+      case 0:
+    // printf("I'm child. My PID is %d\n",getpid());
+    startdemon(wdir,mondir);
+    default:
+    ssu_mntr_play();
     }*/
 
     //옵션입력으로 넘어감.
@@ -63,11 +63,11 @@ void startdemon(char *curdir,char *checkdir){
 	exit(1);
     }
     else if(pid!=0){
-	    ssu_mntr_play();
+	ssu_mntr_play();
 	exit(0);
     }
     pid=getpid();
-   // printf("process running as daemon..\n");
+    // printf("process running as daemon..\n");
     //터미널 종료시 signal의 영향을 받지 않는다.
     signal(SIGHUP, SIG_IGN);
     close(0);//STDIN_FILENO
@@ -79,9 +79,9 @@ void startdemon(char *curdir,char *checkdir){
 	close(fd);
 
     /*if(chdir("/")==-1){
-	printf("chdir error\n");
-	exit(1);
-    }*/
+      printf("chdir error\n");
+      exit(1);
+      }*/
 
     umask(0);
     //setsid로 새로운 세션만들고,
@@ -285,37 +285,37 @@ int scanmondirBASE(char *searchdir,int inityes){
 	bfcnt+=1;
 	fsize=0;
 	fsize=stat(searchdir,&buf);//SIZE 
-	//	if(S_ISREG(buf.st_mode)){
-	memset(node->listfname,0,PATH_SIZE);
-	strcpy(node->listfname,flist[i]->d_name);
-	//   printf("node->listfname:%s\n",node->listfname);
+	if(S_ISREG(buf.st_mode)){
+	    memset(node->listfname,0,PATH_SIZE);
+	    strcpy(node->listfname,flist[i]->d_name);
+	    //   printf("node->listfname:%s\n",node->listfname);
 
-	memset(node->listfpath,0,PATH_SIZE);
-	//strcpy(node->dirpath,searchdir);
-	strcpy(node->listfpath,searchdir);
-
-
+	    memset(node->listfpath,0,PATH_SIZE);
+	    //strcpy(node->dirpath,searchdir);
+	    strcpy(node->listfpath,searchdir);
 
 
-	node->fsize=0;
-	node->fsize=buf.st_size;//SIZE
 
-	memset(node->ctime,0,TM_SIZE);
-	strftime(node->ctime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_ctime)));
 
-	memset(node->mtime,0,TM_SIZE);
-	strftime(node->mtime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_mtime)));
-	//strcpy(node->mtime,ctime(&buf.st_mtime));
-	//  printf("mtime:%s\n",node->mtime);
+	    node->fsize=0;
+	    node->fsize=buf.st_size;//SIZE
 
-	node->inum=buf.st_ino;//inode num
-	//   printf("inum:%d\n",node->inum);
+	    memset(node->ctime,0,TM_SIZE);
+	    strftime(node->ctime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_ctime)));
 
-	// printf("fize(buf.st_size):%d\n",node->fsize);
-	//  printf("listfpath:%s\n",node->listfpath);
+	    memset(node->mtime,0,TM_SIZE);
+	    strftime(node->mtime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_mtime)));
+	    //strcpy(node->mtime,ctime(&buf.st_mtime));
+	    //  printf("mtime:%s\n",node->mtime);
 
-	Mlist_insert(node);
-	//	}
+	    node->inum=buf.st_ino;//inode num
+	    //   printf("inum:%d\n",node->inum);
+
+	    // printf("fize(buf.st_size):%d\n",node->fsize);
+	    //  printf("listfpath:%s\n",node->listfpath);
+
+	    Mlist_insert(node);
+	}
 
 	if((buf.st_mode&S_IFDIR)==S_IFDIR){
 	    //  sprintf(recurdirpath,"%s/%s",searchdir,flist[i]->d_name);
@@ -405,38 +405,38 @@ int scanmondirBASE(char *searchdir,int inityes){
 	    nfcnt+=1;
 	    fsize=0;
 	    fsize=stat(searchdir,&buf);//SIZE
-	    //	if(S_ISREG(buf.st_mode)){
-	    memset(node->listfname,0,PATH_SIZE);
-	    strcpy(node->listfname,flist[i]->d_name);
-	    //  printf("node->listfname:%s\n",node->listfname);
+	    if(S_ISREG(buf.st_mode)){
+		memset(node->listfname,0,PATH_SIZE);
+		strcpy(node->listfname,flist[i]->d_name);
+		//  printf("node->listfname:%s\n",node->listfname);
 
-	    memset(node->listfpath,0,PATH_SIZE);
-	    //strcpy(node->dirpath,searchdir);
-	    strcpy(node->listfpath,searchdir);
-
-
+		memset(node->listfpath,0,PATH_SIZE);
+		//strcpy(node->dirpath,searchdir);
+		strcpy(node->listfpath,searchdir);
 
 
-	    node->fsize=0;
-	    node->fsize=buf.st_size;//SIZE
 
 
-	    memset(node->ctime,0,TM_SIZE);
-	    strftime(node->ctime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_ctime)));
+		node->fsize=0;
+		node->fsize=buf.st_size;//SIZE
 
-	    memset(node->mtime,0,TM_SIZE);
-	    strftime(node->mtime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_mtime)));
-	    //strcpy(node->mtime,ctime(&buf.st_mtime));
-	    //  printf("mtime:%s\n",node->mtime);
 
-	    node->inum=buf.st_ino;//inode num
-	    //   printf("inum:%d\n",node->inum);
+		memset(node->ctime,0,TM_SIZE);
+		strftime(node->ctime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_ctime)));
 
-	    //   printf("fize(buf.st_size):%d\n",node->fsize);
-	    //   printf("listfpath:%s\n",node->listfpath);
+		memset(node->mtime,0,TM_SIZE);
+		strftime(node->mtime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_mtime)));
+		//strcpy(node->mtime,ctime(&buf.st_mtime));
+		//  printf("mtime:%s\n",node->mtime);
 
-	    Mnlist_insert(node);
-	    //	}
+		node->inum=buf.st_ino;//inode num
+		//   printf("inum:%d\n",node->inum);
+
+		//   printf("fize(buf.st_size):%d\n",node->fsize);
+		//   printf("listfpath:%s\n",node->listfpath);
+
+		Mnlist_insert(node);
+	    }
 
 	    if((buf.st_mode&S_IFDIR)==S_IFDIR){
 		//  sprintf(recurdirpath,"%s/%s",searchdir,flist[i]->d_name);
@@ -519,7 +519,7 @@ int scanmondirBASE(char *searchdir,int inityes){
 	memset(mondir,0,PATH_SIZE);
 	getcwd(wdir,PATH_SIZE);
 	sprintf(mondir,"%s/check",wdir);
-//	chdir(mondir);
+	//	chdir(mondir);
 	FILE *fp;
 	char *logfname="log.txt";
 	if((fp=fopen(logfname,"a"))<0){
