@@ -52,7 +52,7 @@ typedef struct _node{//recover l option
     int dupindex;
     char dupped[TM_SIZE];//info정보에 그다음내용이 있다면 중복파일이라는 걸 확인 위해
     int optldt;
-
+char dtimestr[TM_SIZE];
     struct tm delt;
     int fsize;
     List *head;
@@ -122,6 +122,7 @@ void get_time(char *str,char *status);
 int list_search(char *cmpfname,int searchisbase);
 int is_modified(char *cmpmtime,int cmpinum,char *cmpfname);
 void list_print1(int bnodeyes);
+void free_list(MNode* mhead);
 
 void list_insert(Node *newNode);//list에 node추가
 void Clist_insert(CNode *newNode);//list에 node추가
@@ -133,6 +134,7 @@ void list_print();
 void swap_node_data(Node *, Node *);
 int optldt_cmp(Node *a, Node *b);
 int str_cmp(CNode *, CNode *);
+int str_cmp_dtimestr(Node *a,Node *b);
 
 
 void ssu_mntr_play(void);
@@ -140,6 +142,7 @@ int check_opt(const char *str);
 int get_deleteOpt(char *str);//DELETE [FILENAME] [ENDTIME] [OPTION]
 void deloptR_alarm(int k);
 int do_deleteOpt(void);//DELETE [FILENAME] [ENDTIME] [OPTION]
+void relPtoFile(char *onlyfname,char *relPFile,char *ch);
 int do_sizeOpt(char *str);//SIZE [FILENAME] [OPTION]
 void makeRelativeP(char *absolutepath, char *relativepath, char *curdir);
 void do_sizeOptDIR(char *dirname);
