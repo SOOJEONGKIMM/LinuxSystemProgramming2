@@ -219,10 +219,11 @@ void forlogtxt(void){//cmp base&new
 int scanmondirBASE(char *searchdir,int inityes){
     printf("-------------------------scanning dir BASE STARTS\n");
     if(inityes==1){
-	
+
+free_list(mhead);	
 //	for(int i=0;i<bcnt;i++){
 
-	mnhead=NULL;////init first!   
+	mhead=NULL;////init first!   
 	bfcnt=0;
     }
 
@@ -325,9 +326,15 @@ int scanmondirBASE(char *searchdir,int inityes){
 	    scanmondirBASE(searchdir,0);
 
 	}
+	free(flist[i]);
 
 	i++;
     }
+   /* int j;
+    for(j=0;j<countdirp;j++){
+	free(flist[j]);
+    }
+    free(flist[j]);*/
     // indent--;
     // chdir("..");
     dirptr[-1]=0;
@@ -440,9 +447,15 @@ int scanmondirNEW(char *searchdir,int inityes){
 	    scanmondirNEW(searchdir,0);
 
 	}
+	free(flist[i]);
 
 	i++;
     }
+    /*int j;
+    for(j=0;j<countdirp;j++){
+	free(flist[j]);
+    }
+    free(flist[j]);*/
     // indent--;
     // chdir("..");
     dirptr[-1]=0;
@@ -566,5 +579,13 @@ void list_print1(int bnodeyes){
 	    printf("inum:%d,fname:%s,mod:%s\n",rintnode->inum,rintnode->listfname,rintnode->mtime);
 	    rintnode=rintnode->next;
 	}
+    }
+}
+void free_list(MNode* mhead){
+    MNode *tmp;
+    while(mhead!=NULL){
+	tmp=mhead;
+	mhead=mhead->next;
+	free(tmp);
     }
 }
