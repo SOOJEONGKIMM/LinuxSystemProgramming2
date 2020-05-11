@@ -114,8 +114,6 @@ void forlogtxt(void){//cmp base&new
 
     printf("-------------------------COMPARE STARTS----------------------\n");
 
-    //MNode *crenode=(MNode*)malloc(sizeof(MNode));
-    //memset(crenode,0,sizeof(crenode));
     int newfile,deleted,modified; 
 
 
@@ -123,54 +121,51 @@ void forlogtxt(void){//cmp base&new
     modnode=mhead;
     MnNode *Nmodnode;
     Nmodnode=mnhead;
-    while(modnode!=NULL && Nmodnode!=NULL){
-	printf("11fname:n %s b %s\n",modnode->listfname,modnode->listfname);
-	//    printf("modnode->inum:%d Nmodnode->inum %d\n",modnode->inum,Nmodnode->inum);
+    while(modnode!=NULL && Nmodnode!=NULL){//for debug
+	printf("11fname:n %s b %s\n",Nmodnode->listfname,modnode->listfname);
+	    printf("modnode->inum:%d Nmodnode->inum %d\n",modnode->inum,Nmodnode->inum);
 	printf("11modnode->modtime:%s Nmodnode->modtime %s\n",modnode->mtime,Nmodnode->mtime);
-	//   printf("modnode->pathe:%s Nmodnode->mpppe %s\n",modnode->listfpath,Nmodnode->listfpath);
+	//   printf("modnode->path:%s Nmodnode->path %s\n",modnode->listfpath,Nmodnode->listfpath);
 	Nmodnode=Nmodnode->next;
 	modnode=modnode->next;
     }
 
-  /*  if(bfcnt==nfcnt){
+    if(bfcnt==nfcnt){//MODIFY LOG
 	modified=0;
 	if(update!=1){
 	    modnode=mhead;
 	    Nmodnode=mnhead;
 
-	    while(modnode!=NULL){
 		while(Nmodnode!=NULL){
-		    printf("mfname:n %s b %s\n",modnode->listfname,modnode->listfname);
+		    printf("mfname:n %s b %s\n",modnode->listfname,Nmodnode->listfname);
 		    printf("modnode->inum:%d Nmodnode->inum %d\n",modnode->inum,Nmodnode->inum);
 		    printf("modnode->mtime:%s Nmodnode->mtime %s\n",modnode->mtime,Nmodnode->mtime);
-		    //if(modnode->inum==Nmodnode->inum){//same file  
-		    if(modnode->inum!=Nmodnode->inum){//but mtime change
-			write_logtxt(modnode->listfname,"modify",NULL);
+		    if(is_modified(Nmodnode->mtime,Nmodnode->inum,Nmodnode->listfname)){//but mtime change
+			write_logtxt(Nmodnode->listfname,"modify",NULL);
 			update=1;
 			modified=1;
 			printf("MODIFY LOG!!!!!!!!!!!!!!!!\n");
 			break;
 		    }
 
-		    Nmodnode=Nmodnode->next;
+		Nmodnode=Nmodnode->next;
 		}
-		if(update==1)
-		    break;
-		modnode=modnode->next;
-		}
+		printf("bbbbbbbbbbbbbbbbbpppppppppppppppppppppppppp\n");
+		list_print1(1);
+		printf("nnnnnnnnnnnnnnnnnnpppppppppppppppppppppppppp\n");
+		list_print1(0);
 		//free(modnode);
 		//free(Nmodnode);
 	    }
-	}*/
+	}
 	printf("lllllllllllllllllllllllllllllllllllllllllllllllllllli\n");
 
-	if(bfcnt<nfcnt){
+	if(bfcnt<nfcnt){//CREATE LOG
 	    MNode *crenode;
 	    crenode=mhead;
 	    MnNode *Ncrenode;
 	    Ncrenode=mnhead;
 		while(Ncrenode!=NULL){
-
 		    if(list_search(Ncrenode->listfname,1)==0){
 			//deleted=0;
 			write_logtxt(Ncrenode->listfname,"create",NULL);
@@ -180,14 +175,11 @@ void forlogtxt(void){//cmp base&new
 		    }
 		    //  Ndelnode=Ndelnode->next;
 		    Ncrenode=Ncrenode->next;
-
 		}
-	    
-
 	}
 	//free(crenode);
 	//free(Ncrenode);
-	if(bfcnt>nfcnt){
+	if(bfcnt>nfcnt){//DELETE LOG 
 	    if(update!=1&&modified!=1){
 		MNode *delnode;
 		delnode=mhead;
@@ -227,6 +219,9 @@ void forlogtxt(void){//cmp base&new
 int scanmondirBASE(char *searchdir,int inityes){
     printf("-------------------------scanning dir BASE STARTS\n");
     if(inityes==1){
+	
+//	for(int i=0;i<bcnt;i++){
+
 	mnhead=NULL;////init first!   
 	bfcnt=0;
     }
@@ -301,8 +296,12 @@ int scanmondirBASE(char *searchdir,int inityes){
 	    node->fsize=0;
 	    node->fsize=buf.st_size;//SIZE
 
+	    memset(node->ctime,0,TM_SIZE);
+	    strftime(node->ctime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_ctime)));
+
 	    memset(node->mtime,0,TM_SIZE);
-	    strcpy(node->mtime,ctime(&buf.st_mtime));
+	    strftime(node->mtime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_mtime)));
+	    //strcpy(node->mtime,ctime(&buf.st_mtime));
 	    printf("mtime:%s\n",node->mtime);
 
 	    node->inum=buf.st_ino;//inode num
@@ -411,8 +410,13 @@ int scanmondirNEW(char *searchdir,int inityes){
 	    node->fsize=0;
 	    node->fsize=buf.st_size;//SIZE
 
+
+	    memset(node->ctime,0,TM_SIZE);
+	    strftime(node->ctime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_ctime)));
+
 	    memset(node->mtime,0,TM_SIZE);
-	    strcpy(node->mtime,ctime(&buf.st_mtime));
+	    strftime(node->mtime,TM_SIZE,"%Y-%m-%d %H:%M:%S",localtime(&(buf.st_mtime)));
+	    //strcpy(node->mtime,ctime(&buf.st_mtime));
 	    printf("mtime:%s\n",node->mtime);
 
 	    node->inum=buf.st_ino;//inode num
@@ -533,5 +537,34 @@ int list_search(char *cmpfname,int searchisbase){
 	    searchnode=searchnode->next;
 	}
 	return 0;
+    }
+}
+int is_modified(char *cmpmtime,int cmpinum,char *cmpfname){
+    MNode *searchnode=mhead;
+    while(searchnode){
+	if(searchnode->inum==cmpinum){
+	    if(strcmp(searchnode->mtime,cmpmtime) || strcmp(searchnode->listfname, cmpfname)){
+		printf("IS_MODIFY%s\n", searchnode->listfname);
+		return 1; //modified.
+	    }
+	}
+	searchnode=searchnode->next;
+    }
+    return 0;//not existing modtime//is modified! (MODIFY LOG) 
+}
+void list_print1(int bnodeyes){
+    if(bnodeyes==1){
+	MNode *printnode=mhead;
+	while(printnode){
+	    printf("inum:%d,fname:%s,mod:%s\n",printnode->inum,printnode->listfname,printnode->mtime);
+	    printnode=printnode->next;
+	}
+    }
+    if(bnodeyes==0){
+	MnNode *rintnode=mnhead;
+	while(rintnode){
+	    printf("inum:%d,fname:%s,mod:%s\n",rintnode->inum,rintnode->listfname,rintnode->mtime);
+	    rintnode=rintnode->next;
+	}
     }
 }

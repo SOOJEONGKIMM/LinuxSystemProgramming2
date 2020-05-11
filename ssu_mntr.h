@@ -84,7 +84,7 @@ typedef struct MNode{//연결리스트의 노드 구조체
     int inum;
     struct stat buf;  // time of last modification
     char mtime[TM_SIZE];
-    char dtime[TM_SIZE];
+    char ctime[TM_SIZE];
     struct MNode *prev;
 }MNode;
 MNode * mhead;
@@ -96,7 +96,7 @@ typedef struct MnNode{//연결리스트의 노드 구조체
     int inum;
     struct stat buf;  // time of last modification
     char mtime[TM_SIZE];
-    char dtime[TM_SIZE];
+    char ctime[TM_SIZE];
     struct MnNode *prev;
 }MnNode;
 MnNode * mnhead;
@@ -119,6 +119,9 @@ int scanmondirBASE(char *searchdir,int inityes);
 int scanmondirNEW(char *searchdir,int inityes);
 void write_logtxt(char *fname, char *status,char *mtimeifmod);
 void get_time(char *str,char *status);
+int list_search(char *cmpfname,int searchisbase);
+int is_modified(char *cmpmtime,int cmpinum,char *cmpfname);
+void list_print1(int bnodeyes);
 
 void list_insert(Node *newNode);//list에 node추가
 void Clist_insert(CNode *newNode);//list에 node추가
