@@ -67,7 +67,7 @@ void startdemon(char *curdir,char *checkdir){
 	exit(0);
     }
     pid=getpid();
-    printf("process running as daemon..\n");
+   // printf("process running as daemon..\n");
     //터미널 종료시 signal의 영향을 받지 않는다.
     signal(SIGHUP, SIG_IGN);
     close(0);//STDIN_FILENO
@@ -519,10 +519,10 @@ int scanmondirBASE(char *searchdir,int inityes){
 	memset(mondir,0,PATH_SIZE);
 	getcwd(wdir,PATH_SIZE);
 	sprintf(mondir,"%s/check",wdir);
-	chdir(mondir);
+//	chdir(mondir);
 	FILE *fp;
 	char *logfname="log.txt";
-	if((fp=fopen(logfname,"r+w"))<0){
+	if((fp=fopen(logfname,"a"))<0){
 	    fprintf(stderr,"fopen %s error",fname);
 	    exit(1);
 	}

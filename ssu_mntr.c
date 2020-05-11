@@ -26,7 +26,7 @@ void ssu_mntr_play(void){
 	fgets(cmdbuf,BUFFER_SIZE,stdin);
 
 	if(cmdbuf[0]=='\n'){//엔터만 입력시 프롬프트 재출력
-	    printf("entered");
+	   // printf("entered");
 	    continue;
 	}
 	cmdbuf[strlen(cmdbuf)-1]=0;//개행문자제거 
@@ -142,14 +142,14 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	a++;
 	i++;
     }
-    printf("onlyfname:%s",onlyfname);
+    //printf("onlyfname:%s",onlyfname);
     i=j;
     //[ENDTIME] 추출 
     while(i<len && str[i]==' ')
 	i++;
     if(i>=len){//[ENDTIME]주어지지않은경우
 	endtimeExist=0;
-	printf("\nendTE:%d\n",endtimeExist);
+	//printf("\nendTE:%d\n",endtimeExist);
     }
     else{
 	endtimeExist=1;
@@ -157,7 +157,7 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	for(j=i;j<len && str[j]!=' ';j++){//2020-05-05
 	    if(str[j]=='-'&&str[j+1]=='i'){//[ENDTIME]없이 바로 -i만 들어온 경우
 		endtimeExist=0;
-		printf("came here\n");
+	//	printf("came here\n");
 		break;
 	    }
 	    enddatestr[a]=str[j];
@@ -177,8 +177,8 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 		i++;
 	    }
 	    i=j;
-	    printf("enddatestr:%s\n",enddatestr);
-	    printf("endtimestr:%s\n",endtimestr);
+	    //printf("enddatestr:%s\n",enddatestr);
+	    //printf("endtimestr:%s\n",endtimestr);
 	}
     }
     //[OPTION] 추출 
@@ -192,7 +192,7 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	a++;
 	i++;
     }
-    printf("delopt:%s\n",delopt);
+    //printf("delopt:%s\n",delopt);
     i=j;
     if(!strcmp(delopt,"-i")){
 	deloptI=1;//전역변수로 선언하고, do_deleteOpt()에서 옵션수행할때 다시 플래그 0으로 초기화할것.
@@ -201,8 +201,8 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	deloptR=1;
     }
 
-    printf("deloptR:%d\n",deloptR);
-    printf("\nendTE:%d",endtimeExist);
+    //printf("deloptR:%d\n",deloptR);
+    //printf("\nendTE:%d",endtimeExist);
     if(endtimeExist==0)
 	do_deleteOpt();
     else{
@@ -213,10 +213,10 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	struct tm alarmsetT;
 	int waitmin=0;
 	int waitsec=0;
-	printf("setting alarm\n");
+	//printf("setting alarm\n");
 	time_t alarmsett=time(NULL);
 	alarmsetT=*localtime(&alarmsett);
-	printf("alarmsetT:%d일 %d:%d:%d\n",alarmsetT.tm_mday,alarmsetT.tm_hour,alarmsetT.tm_min,alarmsetT.tm_sec);
+	//printf("alarmsetT:%d일 %d:%d:%d\n",alarmsetT.tm_mday,alarmsetT.tm_hour,alarmsetT.tm_min,alarmsetT.tm_sec);
 	//sprintf(alarmTmin,"%d",alarmsetT.tm_min);
 	j=0;
 	int i=0;
@@ -238,8 +238,8 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	    endtimesec[i]=endtimestr[j+1];
 	    j++;
 	}
-	printf("endtimemin:%s\n",endtimemin);
-	printf("endtimesec:%s\n",endtimesec);
+	//printf("endtimemin:%s\n",endtimemin);
+	//printf("endtimesec:%s\n",endtimesec);
 	int endtimeminInt=atoi(endtimemin);
 	int endtimesecInt=atoi(endtimesec);
 	//char alarmsetT[TM_SIZE];
@@ -263,7 +263,7 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	alarm(waitsec);//예약시간이 되면 alarm이 SIGALRM을 전송한다.
 
 
-	printf("after alarm\n");
+	//printf("after alarm\n");
     }
 
 
@@ -277,11 +277,11 @@ void deloptR_alarm(int k){
     pid_t pid;
     int status;
     char recheckbuf[OPT_SIZE];
-    printf("alarm ringing\n");
+    //printf("alarm ringing\n");
     //vfork 생성 (자식/부모프로세스에서 삭제작업 진행)
     switch(pid=fork()){
 	case 0:
-	    printf("I'm child. My PID is %d\n",getpid());
+	    //printf("I'm child. My PID is %d\n",getpid());
 	    if(deloptR==1){//do_deleteOpt()호출 전 재확인 문구
 		while(1){
 		    printf("Delete [y/n]?");
@@ -362,20 +362,20 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	perror("chdir");
 	exit(1);
     }
-	char relPFile[PATH_SIZE];
-	char abPFile[PATH_SIZE];
-char tmp2[PATH_SIZE];
-	memset(relPFile,0,PATH_SIZE);
-	memset(abPFile,0,PATH_SIZE);
-if(strstr(onlyfname,"/")!=0){//relative path
-	    char *tmp1=strrchr(onlyfname,'/');
-relPtoFile(tmp1,tmp2,"/");
-//memset(onlyfname,0,PATH_SIZE);
-memset(onlyfname,0,PATH_SIZE);
-strcpy(onlyfname,tmp2);
-}
+    char relPFile[PATH_SIZE];
+    char abPFile[PATH_SIZE];
+    char tmp2[PATH_SIZE];
+    memset(relPFile,0,PATH_SIZE);
+    memset(abPFile,0,PATH_SIZE);
+    if(strstr(onlyfname,"/")!=0){//relative path
+	char *tmp1=strrchr(onlyfname,'/');
+	relPtoFile(tmp1,tmp2,"/");
+	//memset(onlyfname,0,PATH_SIZE);
+	memset(onlyfname,0,PATH_SIZE);
+	strcpy(onlyfname,tmp2);
+    }
 
-printf("HH onlyfname:%s\n",onlyfname);
+    //printf("HH onlyfname:%s\n",onlyfname);
 
 
 
@@ -416,15 +416,15 @@ printf("HH onlyfname:%s\n",onlyfname);
     //printf("checkoverlap:%s\n",checkoverlap);
     while(printdup){
 	if(!strcmp(printdup->listfname,onlyfname)){
-	    printf("overlap exists\n");
+	    //printf("overlap exists\n");
 	    //if(strlen(printdup->dupped)!=0)
 	    overlapped=1;
-	    printf("overlapped:%d\n",overlapped);
+	    //printf("overlapped:%d\n",overlapped);
 	    //printf("%d.  %s\n    %s    %s\n",dupindex,onlyfname,printdup->dtime,printdup->mtime);
 	    dupindex++;
 	    printdup->dupindex=dupindex;//중복횟수 셈
-	    printf("printdup->listfname:%s\n",printdup->listfname);
-	    printf("printdup->dupindex:%d\n",printdup->dupindex);
+	    //printf("printdup->listfname:%s\n",printdup->listfname);
+	    //printf("printdup->dupindex:%d\n",printdup->dupindex);
 	}
 	printdup=printdup->next;
     }
@@ -465,16 +465,16 @@ printf("HH onlyfname:%s\n",onlyfname);
 	mkdir(filesdir,0744);
 
 	//files디렉토리로 DELETE명령어로 지운 파일 자체 저장
-	
 
-	    if(overlapped==1){
-		for(int i=0;i<dupindex;i++){
-		    sprintf(newdir,"%s/dup*%d_%s",filesdir,dupindex,onlyfname);
-		}
+
+	if(overlapped==1){
+	    for(int i=0;i<dupindex;i++){
+		sprintf(newdir,"%s/dup*%d_%s",filesdir,dupindex,onlyfname);
 	    }
-	    else
-		sprintf(newdir,"%s/%s",filesdir,onlyfname);
-	
+	}
+	else
+	    sprintf(newdir,"%s/%s",filesdir,onlyfname);
+
 
 
 	if(rename(fnamepath,newdir)<0){
@@ -533,14 +533,14 @@ printf("HH onlyfname:%s\n",onlyfname);
     while(infosize){
 	infosizesum+=infosize->fsize;
 	//printf("infosize fsize:%d\n",infosize->fsize);	
-	printf("infosizesum:%d\n",infosizesum);	
+	//printf("infosizesum:%d\n",infosizesum);	
 	infosize=infosize->next;
     }
     char tmpdelfname[FILE_SIZE];
     char tmpdelinfo[PATH_SIZE];
     char tmpdelfiles[PATH_SIZE];
     while(infosizesum>2*1024){
-	printf("from old files, delete info and files's file...");
+	printf("from old files, deleting info and files's file...(over 2KB)");
 	Node *infodel=(Node*)malloc(sizeof(infodel));
 	memset(infodel,0,sizeof(infodel));
 	memset(tmpdelfname,0,FILE_SIZE);
@@ -588,15 +588,15 @@ void relPtoFile(char *onlyfname,char *relPFile,char *ch){
     }
 }
 /*void abPtoFile(char *onlyfname,char *abPFile,char *checkdir){
-    while(*onlyfname){
-	if(*onlyfname==*checkdir){
-	    onlyfname++;
-	    checkdir++;
-	    continue;
-	}
-	*abPFile++=*onlyfname++;
-    }
-} used strrchr*/
+  while(*onlyfname){
+  if(*onlyfname==*checkdir){
+  onlyfname++;
+  checkdir++;
+  continue;
+  }
+ *abPFile++=*onlyfname++;
+ }
+ } used strrchr*/
 
 int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
     chead=NULL;//init first!  
@@ -772,7 +772,7 @@ void do_sizeOptDIR(char *dirname){
     while((entry=readdir(dp))!=NULL){
 	lstat(entry->d_name,&buf);
 	if(S_ISREG(buf.st_mode)){
-	   // printf("Dir's file:%s\n",entry->d_name);
+	    // printf("Dir's file:%s\n",entry->d_name);
 	    fsize=0;
 	    fsize=buf.st_size;
 	}
@@ -922,55 +922,55 @@ int do_recoverOpt(char *str){
     char duponlyfname[PATH_SIZE];
     char dupindexpick[OPT_SIZE];
     int dupindex=1;
-int dupcnt=0;
+    int dupcnt=0;
 
     char* ptr;
     char* ptrdup;
     printdup=head;
-while(printdup){
-	if(!strcmp(printdup->listfname,onlyfname)){
-dupcnt++;
-}
-printdup=printdup->next;
-}
-printdup=head;
-if(dupcnt>1){
     while(printdup){
 	if(!strcmp(printdup->listfname,onlyfname)){
-	    overlapped=1;
-	    printdup->dupindex=dupindex;
-	    printf("%d.  %s\n    %s    %s\n",printdup->dupindex,printdup->listfname,printdup->dtime,printdup->mtime);
-	    dupindex++;
+	    dupcnt++;
 	}
-	ptr=NULL;
-	ptrdup=NULL;
-	ptr=strstr(printdup->listfname,onlyfname);//strstr has return value
-	ptrdup=strstr(printdup->listfname,"dup*");
-	if(ptr!=NULL){
-	    if(ptrdup!=NULL){
-		overlapped=1;
-		printdup->dupindex=dupindex;//중복횟수 셈
-		printf("%d.  %s\n    %s    %s\n",printdup->dupindex,printdup->listfname,printdup->dtime,printdup->mtime);
-
-		dupindex++;
-	    }
-	}
-	ptr=NULL;
-	ptrdup=NULL;
 	printdup=printdup->next;
     }
-    if(overlapped==1){
-	printf("Choose: ");
-	fgets(dupindexpick,OPT_SIZE,stdin);
-	int pick=atoi(dupindexpick);
-	printdup=head;
+    printdup=head;
+    if(dupcnt>1){
 	while(printdup){
-	    if(pick==printdup->dupindex)
-		strcpy(duponlyfname,printdup->listfname);
+	    if(!strcmp(printdup->listfname,onlyfname)){
+		overlapped=1;
+		printdup->dupindex=dupindex;
+		printf("%d.  %s\n    %s    %s\n",printdup->dupindex,printdup->listfname,printdup->dtime,printdup->mtime);
+		dupindex++;
+	    }
+	    ptr=NULL;
+	    ptrdup=NULL;
+	    ptr=strstr(printdup->listfname,onlyfname);//strstr has return value
+	    ptrdup=strstr(printdup->listfname,"dup*");
+	    if(ptr!=NULL){
+		if(ptrdup!=NULL){
+		    overlapped=1;
+		    printdup->dupindex=dupindex;//중복횟수 셈
+		    printf("%d.  %s\n    %s    %s\n",printdup->dupindex,printdup->listfname,printdup->dtime,printdup->mtime);
+
+		    dupindex++;
+		}
+	    }
+	    ptr=NULL;
+	    ptrdup=NULL;
 	    printdup=printdup->next;
 	}
+	if(overlapped==1){
+	    printf("Choose: ");
+	    fgets(dupindexpick,OPT_SIZE,stdin);
+	    int pick=atoi(dupindexpick);
+	    printdup=head;
+	    while(printdup){
+		if(pick==printdup->dupindex)
+		    strcpy(duponlyfname,printdup->listfname);
+		printdup=printdup->next;
+	    }
+	}
     }
-}
 
 
     //trashdir로 이동
@@ -1042,15 +1042,15 @@ if(dupcnt>1){
     else
 	sprintf(removeinfopath,"%s/%s",infodir,onlyfname);
     int delinfo=remove(removeinfopath);
-    if(delinfo==0)
+   /* if(delinfo==0)
 	printf("infodir:%s deleted.\n",removeinfopath);
     else
 	printf("%s failed to delete .\n",removeinfopath);
-
+*/
 
     chdir(curdir);
 
-    printf("before returning RECOVER: curdir:%s\n",curdir);
+    //printf("before returning RECOVER: curdir:%s\n",curdir);
 
 
     return 0;
@@ -1070,9 +1070,9 @@ int do_treeOpt(char *str){
 int do_helpOpt(char *str){
 
     printf("DELETE [FILENAME] [ENDTIME] [OPTION] (OPTION:-r -i)\n");
-printf("SIZE [FILENAME] [OPTION] (OPTION:-d)\n");
-printf("RECOVER [FILENAME] [OPTION] (OPTION:-l)\n");
-printf("TREE\n");
+    printf("SIZE [FILENAME] [OPTION] (OPTION:-d)\n");
+    printf("RECOVER [FILENAME] [OPTION] (OPTION:-l)\n");
+    printf("TREE\n");
     return 0;
 }
 void scanningTdir(char *searchdir){
@@ -1193,7 +1193,7 @@ void scanningTdir(char *searchdir){
 	    optldtimeInt=0;
 	    optldt=0;
 	    strcpy(node->dtimestr,dtime);////////////////////***trying string for sort
-	   
+
 	    memset((char*)optldtime,0,TM_SIZE);
 	    //year=month=day=hour=min=sec=0;
 	    //D : 2020-05-05 09:47:16
@@ -1558,7 +1558,6 @@ void swap_Cnode_data(CNode *list1, CNode *list2){
     strcpy(list1->relP, relP);
     list1->fsize=fsize;
     list1->chead = chead;
-    printf("list1:%s,list2:%s\n",list1->listfname,list2->listfname);
 }
 
 void swap_node_data(Node *list1, Node *list2) {
@@ -1677,22 +1676,17 @@ void list_sort(int (*cmp)()){
     }
 }
 
-void list_print(){
+void list_print(){//RECOVER -l option
     Node *cur;
     cur=head;
     int i=0;
     while(cur->next!=NULL){
 	if(cur->listfname!=NULL&&cur->dtime!=NULL && cur->optldt!=0){
-	    printf("%d %s %s", cur->optldt,cur->listfname, cur->dtime);
+	    printf("%s %s",cur->listfname, cur->dtime);
 	}
 	cur=cur->next;
     }
-    printf("%d %s %s\n",cur->optldt,cur->listfname, cur->dtime);
-}
-int list_compare(char *onlyfname){
-
-
-
+    printf("%s %s\n",cur->listfname, cur->dtime);
 }
 
 
