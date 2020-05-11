@@ -1479,6 +1479,9 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 			for(int i=0;i<14-strlen(node->listfname);i++){
 			    sprintf(treefname,"%s-",treefname);
 			}
+if(indent==1){
+printf("%15s", "");
+}
 			printf("|%-15s",treefname);
 		    }
 		    else//empty dir 
