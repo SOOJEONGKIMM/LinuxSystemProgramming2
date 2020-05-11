@@ -9,7 +9,7 @@ int main(void){
     char wdir[PATH_SIZE];
     char mondir[PATH_SIZE];
     //    char logpath[PATH_SIZE];//log.txt path name
-        pid_t pid;
+    pid_t pid;
 
     memset(wdir,0,PATH_SIZE);
     memset(mondir,0,PATH_SIZE);
@@ -28,13 +28,13 @@ int main(void){
     printf("checkdir:%s\n",mondir);
     scanmondirBASE(mondir,1);
     //chdir(wdir);
-    switch(pid=vfork()){
-	case 0:
-	    printf("I'm child. My PID is %d\n",getpid());
-	    startdemon(wdir,mondir);
-	default:
-	    ssu_mntr_play();
-    }
+    /* switch(pid=fork()){
+       case 0:
+       printf("I'm child. My PID is %d\n",getpid());*/
+    startdemon(wdir,mondir);
+    //	default:
+    ssu_mntr_play();
+    //  }
 
     //옵션입력으로 넘어감.
     return 0;
@@ -49,19 +49,19 @@ void startdemon(char *curdir,char *checkdir){
     int bfcnt,nfcnt;
     int fd, maxfd;
 
-    pid_t pid;
+    /*  pid_t pid;
 
-    printf("forlogtxt");
+	printf("forlogtxt");
     //printf(file);//debug
 
     //fork()로 자식 프로세스를 생성한다. 
     //이 함수는 한 번 호출되나 두 개의 리턴값을 리턴하는 함수다.
     //자식에게 리턴하는값은 0, 부모에게는 새 자식프로세스의 ID. 
     if((pid=fork())<0)//프로세스 생성 실패시 -1리턴.
-	exit(0);
+    exit(0);
     //부모프로세스를 종료시킴.
     else if(pid!=0)
-	exit(0);
+    exit(0);
     pid=getpid();
     //터미널 종료시 signal의 영향을 받지 않는다.
     signal(SIGHUP, SIG_IGN);
@@ -71,43 +71,43 @@ void startdemon(char *curdir,char *checkdir){
     maxfd=getdtablesize();
 
     for(fd=0;fd<maxfd;fd++)
-	close(fd);
+    close(fd);
 
     if(chdir("/")==-1){
-	printf("chdir error\n");
-	exit(1);
+    printf("chdir error\n");
+    exit(1);
     }
 
     umask(0);
     //setsid로 새로운 세션만들고,
     //현재프로세스(자식)의 세션의 PID가 제어권을 가지도록 한다.
     if(setsid()==-1){
-	fprintf(stderr,"set sid error\n");
-	exit(0);
+    fprintf(stderr,"set sid error\n");
+    exit(0);
     }
 
     fd=open("/dev/null",O_RDWR);
     dup(0);
-    dup(0);
+    dup(0);*/
 
-	    while(1){
-		sleep(1);
-		printf("++++++++++++++++++++++++++++++++++whileloop++++++++++++++++++++\n");
-		printf("check:%s\n",mondir);
-		//	chdir(ckdir);
-		scanmondirNEW(mondir,1);//1초 주기로 new스캔+base&new비교
-		forlogtxt();
-		//	chdir(curdir);
+    while(1){
+	sleep(1);
+	printf("++++++++++++++++++++++++++++++++++whileloop++++++++++++++++++++\n");
+	printf("check:%s\n",mondir);
+	//	chdir(ckdir);
+	scanmondirNEW(mondir,1);//1초 주기로 new스캔+base&new비교
+	forlogtxt();
+	//	chdir(curdir);
 
-		if(update==1){//if update, scan base again.
-		    update=0;//init
-		    printf("update:%d\n",update);
-		    scanmondirBASE(mondir,1);
-		}
+	if(update==1){//if update, scan base again.
+	    update=0;//init
+	    printf("update:%d\n",update);
+	    scanmondirBASE(mondir,1);
+	}
 
-		printf("ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
+	printf("ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
 
-	    }
+    }
 
 }
 void forlogtxt(void){//cmp base&new 
@@ -118,21 +118,21 @@ void forlogtxt(void){//cmp base&new
     //memset(crenode,0,sizeof(crenode));
     int newfile,deleted,modified; 
 
+
+    MNode *modnode;
+    modnode=mhead;
+    MnNode *Nmodnode;
+    Nmodnode=mnhead;
+    while(modnode!=NULL && Nmodnode!=NULL){
+	printf("11fname:n %s b %s\n",modnode->listfname,modnode->listfname);
+	//    printf("modnode->inum:%d Nmodnode->inum %d\n",modnode->inum,Nmodnode->inum);
+	printf("11modnode->modtime:%s Nmodnode->modtime %s\n",modnode->mtime,Nmodnode->mtime);
+	//   printf("modnode->pathe:%s Nmodnode->mpppe %s\n",modnode->listfpath,Nmodnode->listfpath);
+	Nmodnode=Nmodnode->next;
+	modnode=modnode->next;
+    }
+
     if(bfcnt==nfcnt){
-	MNode *modnode;
-	modnode=mhead;
-	MnNode *Nmodnode;
-	Nmodnode=mnhead;
-	while(modnode!=NULL && Nmodnode!=NULL){
-	    printf("mfname:n %s b %s\n",modnode->listfname,modnode->listfname);
-	    printf("modnode->inum:%d Nmodnode->inum %d\n",modnode->inum,Nmodnode->inum);
-	    printf("modnode->modtime:%s Nmodnode->modtime %s\n",modnode->mtime,Nmodnode->mtime);
-	    printf("modnode->pathe:%s Nmodnode->mpppe %s\n",modnode->listfpath,Nmodnode->listfpath);
-	    Nmodnode=Nmodnode->next;
-	    modnode=modnode->next;
-	}
-
-
 	modified=0;
 	if(update!=1){
 	    modnode=mhead;
@@ -140,7 +140,8 @@ void forlogtxt(void){//cmp base&new
 
 	    while(modnode!=NULL && Nmodnode!=NULL){
 		printf("mfname:n %s b %s\n",modnode->listfname,modnode->listfname);
-		printf("modnode->inum:%d Nmodnode->inum %d\n",modnode->inum,Nmodnode->inum);
+		//printf("modnode->inum:%d Nmodnode->inum %d\n",modnode->inum,Nmodnode->inum);
+		printf("modnode->mtime:%s Nmodnode->mtime %s\n",modnode->mtime,Nmodnode->mtime);
 		//if(modnode->inum==Nmodnode->inum){//same file  
 		if(strcmp(modnode->mtime,Nmodnode->mtime)){//but mtime change
 		    write_logtxt(modnode->listfname,"modify",NULL);
@@ -173,7 +174,7 @@ void forlogtxt(void){//cmp base&new
     }
     printf("lllllllllllllllllllllllllllllllllllllllllllllllllllli\n");
 
-    if(bfcnt!=nfcnt){
+    if(bfcnt<nfcnt){
 	MNode *crenode;
 	crenode=mhead;
 	MnNode *Ncrenode;
@@ -197,12 +198,17 @@ void forlogtxt(void){//cmp base&new
 
 		//if(newfile==1){//not existing file in base
 	    }
+	    if(update==1)
+		break;
 	    Ncrenode=Ncrenode->next;
 	    printf("next Nnode scan working create...\n");
 	    // }
 	}
-	//free(crenode);
-	//free(Ncrenode);
+
+    }
+    //free(crenode);
+    //free(Ncrenode);
+    if(bfcnt>nfcnt){
 	if(update!=1&&modified!=1){
 	    MNode *delnode;
 	    delnode=mhead;
@@ -224,9 +230,12 @@ void forlogtxt(void){//cmp base&new
 
 
 		    //  if(deleted==1){//not existing file in new 
-		    // }
-		    delnode=delnode->next;
 		}
+		if(update==1)
+		    break;
+		delnode=delnode->next;
+		//}
+
 	    }
 	    //free(delnode);
 	    // free(Ndelnode);
@@ -298,8 +307,9 @@ int scanmondirBASE(char *searchdir,int inityes){
 	}
 	strcpy(dirptr,flist[i]->d_name);
 	bfcnt+=1;
-
-	if(!S_ISDIR(tempstat.st_mode)){
+	fsize=0;
+	fsize=stat(searchdir,&buf);//SIZE 
+	if(S_ISREG(buf.st_mode)){
 	    memset(node->listfname,0,PATH_SIZE);
 	    strcpy(node->listfname,flist[i]->d_name);
 	    printf("node->listfname:%s\n",node->listfname);
@@ -308,8 +318,7 @@ int scanmondirBASE(char *searchdir,int inityes){
 	    //strcpy(node->dirpath,searchdir);
 	    strcpy(node->listfpath,searchdir);
 
-	    fsize=0;
-	    fsize=stat(node->listfpath,&buf);//SIZE 
+
 
 
 	    node->fsize=0;
@@ -322,8 +331,8 @@ int scanmondirBASE(char *searchdir,int inityes){
 	    node->inum=buf.st_ino;//inode num
 
 
-	    printf("fize(buf.st_size):%d\n",node->fsize);
-	    printf("listfpath:%s\n",node->listfpath);
+	    // printf("fize(buf.st_size):%d\n",node->fsize);
+	    //  printf("listfpath:%s\n",node->listfpath);
 
 	    Mlist_insert(node);
 	}
@@ -333,7 +342,7 @@ int scanmondirBASE(char *searchdir,int inityes){
 
 	    //indent++;
 	    //strcpy(node->listfpath,temppath);
-	    printf("listfpath:%sis directory\n",node->listfpath);
+	    //  printf("listfpath:%sis directory\n",node->listfpath);
 
 	    printf("~~~~~~~~~~~~~SCANDIR RECURSIVE FOR BASE~~~~~~~~~~~~~\n");
 
@@ -408,8 +417,9 @@ int scanmondirNEW(char *searchdir,int inityes){
 	}
 	strcpy(dirptr,flist[i]->d_name);
 	nfcnt+=1;
-
-	if(!S_ISDIR(tempstat.st_mode)){
+	fsize=0;
+	fsize=stat(searchdir,&buf);//SIZE
+	if(S_ISREG(buf.st_mode)){
 	    memset(node->listfname,0,PATH_SIZE);
 	    strcpy(node->listfname,flist[i]->d_name);
 	    printf("node->listfname:%s\n",node->listfname);
@@ -418,8 +428,7 @@ int scanmondirNEW(char *searchdir,int inityes){
 	    //strcpy(node->dirpath,searchdir);
 	    strcpy(node->listfpath,searchdir);
 
-	    fsize=0;
-	    fsize=stat(node->listfpath,&buf);//SIZE 
+
 
 
 	    node->fsize=0;
@@ -432,8 +441,8 @@ int scanmondirNEW(char *searchdir,int inityes){
 	    node->inum=buf.st_ino;//inode num
 
 
-	    printf("fize(buf.st_size):%d\n",node->fsize);
-	    printf("listfpath:%s\n",node->listfpath);
+	    //   printf("fize(buf.st_size):%d\n",node->fsize);
+	    //   printf("listfpath:%s\n",node->listfpath);
 
 	    Mnlist_insert(node);
 	}
@@ -443,7 +452,7 @@ int scanmondirNEW(char *searchdir,int inityes){
 
 	    //indent++;
 	    //strcpy(node->listfpath,temppath);
-	    printf("listfpath:%sis directory\n",node->listfpath);
+	    //   printf("listfpath:%sis directory\n",node->listfpath);
 
 	    printf("~~~~~~~~~~~~~SCANDIR RECURSIVE FOR NEW~~~~~~~~~~~~~\n");
 
