@@ -926,21 +926,41 @@ int do_recoverOpt(char *str){
     char duponlyfname[PATH_SIZE];
     char dupindexpick[OPT_SIZE];
     int dupindex=1;
-    int dupcnt=0;
 
     char* ptr;
     char* ptrdup;
-    printdup=head;
-    while(printdup){
-	if(!strcmp(printdup->listfname,onlyfname)){
-	    dupcnt++;
-	}
-	printdup=printdup->next;
-    }
+    char *erasedup;
+    char erasedup2[PATH_SIZE];
+
     printdup=head;
 
     while(printdup){
-	if(dupcnt>1){
+	ptr=NULL;
+	ptrdup=NULL;
+	ptr=strstr(printdup->listfname,onlyfname);//strstr has return value
+	ptrdup=strstr(printdup->listfname,"dup*");
+	if(ptr!=NULL){//파일이름을 포함하고 식별자dup*도 포함하면 중복파일존재.
+	    if(ptrdup!=NULL){
+		overlapped=1;
+		printdup->dupindex=dupindex;//중복횟수 셈
+		//출력은 원본파일 이름으로 해줘야함. 
+		erasedup=strchr(printdup->listfname,'*');//trim 'dup*' from dup*1_file
+		erasedup=strchr(erasedup,'_');//trim '_' from dup*1_file
+		memset(erasedup2,0,PATH_SIZE);
+		relPtoFile(erasedup,erasedup2,"_");
+		printf("%d.  %s\n    %s    %s\n",printdup->dupindex,erasedup2,printdup->dtime,printdup->mtime);
+		erasedup=NULL;//init for next file.
+
+		dupindex++;
+	    }
+	}
+	ptr=NULL;
+	ptrdup=NULL;
+	printdup=printdup->next;
+    }
+    printdup=head;
+    if(overlapped==1){//위의 경우(중복인경우) 처음삭제되었을 dup*없는 파일도 출력.
+	while(printdup){
 	    if(!strcmp(printdup->listfname,onlyfname)){
 		overlapped=1;
 		printdup->dupindex=dupindex;
@@ -948,23 +968,8 @@ int do_recoverOpt(char *str){
 		printf("%d.  %s\n    %s    %s\n",printdup->dupindex,printdup->listfname,printdup->dtime,printdup->mtime);
 		dupindex++;
 	    }
-	}
-	ptr=NULL;
-	ptrdup=NULL;
-	ptr=strstr(printdup->listfname,onlyfname);//strstr has return value
-	ptrdup=strstr(printdup->listfname,"dup*");
-	if(ptr!=NULL){
-	    if(ptrdup!=NULL){
-		overlapped=1;
-		printdup->dupindex=dupindex;//중복횟수 셈
-		printf("%d.  %s\n    %s    %s\n",printdup->dupindex,printdup->listfname,printdup->dtime,printdup->mtime);
-
-		dupindex++;
-	    }
-	}
-	ptr=NULL;
-	ptrdup=NULL;
 	printdup=printdup->next;
+	}
     }
     if(overlapped==1){
 	printf("Choose: ");
@@ -1422,9 +1427,9 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
 	if(S_ISREG(tempstat.st_mode)){
 
-	memset(node->listfname,0,PATH_SIZE);
-	strcpy(node->listfname,flist[i]->d_name);
-	printf("listfname:%s\n",node->listfname);
+	    memset(node->listfname,0,PATH_SIZE);
+	    strcpy(node->listfname,flist[i]->d_name);
+	    printf("listfname:%s\n",node->listfname);
 
 	    strcpy(node->listfpath,temppath);
 	    fsize=0;
@@ -1462,7 +1467,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
 	}
 	if((tempstat.st_mode&S_IFDIR)==S_IFDIR){
-	memset(node->listdname,0,PATH_SIZE);
+	    memset(node->listdname,0,PATH_SIZE);
 
 	    strcpy(node->listdname,flist[i]->d_name);
 	    printf("listdname:%s\n",node->listdname);
