@@ -67,7 +67,9 @@ typedef struct _clist{
 
 typedef struct _cnode{//SIZE TREE 
     char listfpath[PATH_SIZE];
+    char listdpath[PATH_SIZE];//size opt와 분별위해 delete에서 디렉토리 처리 위해 따로 만듦.
     char listfname[PATH_SIZE]; 
+    char listdname[PATH_SIZE]; 
     int fsize;
     char relP[PATH_SIZE];
     CList *chead;
@@ -124,6 +126,7 @@ int is_modified(char *cmpmtime,int cmpinum,char *cmpfname);
 void list_print1(int bnodeyes);
 void free_list(MNode* mhead);
 
+int list_search_CNode(char *cmpfname);//checkdir에 존재하는 파일인지 확인.
 void list_insert(Node *newNode);//list에 node추가
 void Clist_insert(CNode *newNode);//list에 node추가
 void Mlist_insert(MNode *newNode);

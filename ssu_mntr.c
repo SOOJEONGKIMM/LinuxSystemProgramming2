@@ -375,18 +375,40 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	memset(onlyfname,0,PATH_SIZE);
 	strcpy(onlyfname,tmp2);
     }
-
-    if(access(onlyfname,F_OK)!=0){
+    //scandir탐색 후 존재하는 파일인지 확인
+    scanningCdir(NULL,0,ALL,1,curdir);//하위디렉토리까지 한번 스캔해서 리스트에 정보받아옴.
+    if(list_search_CNode(onlyfname)==0){
 	printf("%s is not a existing file\n",onlyfname);
 	chdir(curdir);
 	endtimeExist=0;//init
 	ssu_mntr_play();
     }
+
+    CNode *searchnode;//존재하는 파일이니 경로를 가져옴. 
+    searchnode=chead;
+    while(searchnode){
+	if(!strcmp(searchnode->listfname,onlyfname)){
+	    strcpy(fnamepath,searchnode->listfpath);
+	    break;
+	}
+	if(!strcmp(searchnode->listdname,onlyfname)){
+	    strcpy(fnamepath,searchnode->listdpath);
+	    break;
+	}
+	searchnode=searchnode->next;
+    }
+    printf("found fnamepath:%s\n",fnamepath);
+    /*if(access(onlyfname,F_OK)!=0){
+      printf("%s is not a existing file\n",onlyfname);
+      chdir(curdir);
+      endtimeExist=0;//init
+      ssu_mntr_play();
+      }
     //삭제파일의 절대경로 가져옴
     if(realpath(onlyfname,fnamepath)==NULL){
-	fprintf(stderr,"realpath error for %s\n",onlyfname);
-	//exit(1);
-    }
+    fprintf(stderr,"realpath error for %s\n",onlyfname);
+    //exit(1);
+    }*/
     //입력받은 파일이 정상적으로 존재하는 파일인지 확인
     if(lstat(fnamepath,&statbuf)<0){
 	fprintf(stderr,"lstat error for %s\n",fnamepath);
@@ -395,13 +417,13 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
     /*if(!S_ISREG(statbuf.st_mode)){
       fprintf(stderr,"stat error for %s, not a regular file\n",fnamepath);
     //exit(1);
-    } */
+    } *///디렉토리 입력도 있어서 주석처리함. 
 
-    scanningTdir(infodir);
-    chdir(curdir);
 
     //중복 체크
     //trash dir스캔해서 입력파일과 동일한 이름이 있는지 확인
+    scanningTdir(infodir);
+    chdir(curdir);
     Node *printdup=(Node*)malloc(sizeof(Node));
     memset(printdup,0,sizeof(printdup));
     printdup=head;
@@ -426,7 +448,7 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
     }
 
 
-    if(deloptI==1){
+    if(deloptI==1){//-i option: 경로이동 없이 바로 영구적 삭제. 
 	int delI=remove(fnamepath);
 	if(delI==0)
 	    printf("%s deleted with i option.\n",fnamepath);
@@ -517,6 +539,8 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 
 	fclose(fp);
     }
+
+    //info디렉토리 크기가 2KB가 넘을 경우 오래된파일부터 files info에서 모두 삭제.
     Node *infosize=(Node*)malloc(sizeof(infosize));
     memset(infosize,0,sizeof(infosize));
     infosize=head;
@@ -526,7 +550,7 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	infosizesum+=infosize->fsize;
 	printf("infosize fsize:%d\n",infosize->fsize);	
 	printf("infosizesum:%d\n",infosizesum);	
-	infosize=infosize->next;
+	infosize=infosize->next;//info 누적 사이즈 계산 
     }
     char tmpdelfname[FILE_SIZE];
     char tmpdelinfo[PATH_SIZE];
@@ -539,18 +563,18 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	memset(tmpdelinfo,0,PATH_SIZE);
 	memset(tmpdelfiles,0,PATH_SIZE);
 	infodel=head;
-	list_sort(optldt_cmp);//sort
+	list_sort(optldt_cmp);//오름차순sort
 
 	list_print();//debug
 	memset(tmpdelfname,0,PATH_SIZE);
-	printf("theadd:%s\n",head->listfname);
+	printf("theadd:%s\n",head->listfname);//가장 오래된 파일. 
 	strcpy(tmpdelfname,head->listfname);
 	chdir(infodir);
 	realpath(tmpdelfname,tmpdelinfo);
-	remove(tmpdelinfo);
+	remove(tmpdelinfo);//info에서 삭제 
 	chdir(filesdir);
 	realpath(tmpdelfname,tmpdelfiles);
-	remove(tmpdelfiles);
+	remove(tmpdelfiles);//files에서 삭제
 
 	chdir(curdir);
     }
@@ -1174,7 +1198,7 @@ void scanningTdir(char *searchdir){
 	    optldtimeInt=0;
 	    optldt=0;
 	    strcpy(node->dtimestr,dtime);////////////////////***trying string for sort
-	    printf("DTIME:%s\n",node->dtimestr);
+	    //printf("DTIME:%s\n",node->dtimestr);
 	    memset((char*)optldtime,0,TM_SIZE);
 	    //year=month=day=hour=min=sec=0;
 	    //D : 2020-05-05 09:47:16
@@ -1366,8 +1390,6 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
     while(i<countdirp){
 	CNode *node=(CNode*)malloc(sizeof(CNode));
 	memset(node,0,sizeof(node));
-	memset(node->listfname,0,PATH_SIZE);
-	strcpy(node->listfname,flist[i]->d_name);
 	//printf("counting file num in %s dir..\n",searchdirbuf);
 	//printf("node->listfname:%s\n",node->listfname);
 	if(!strcmp(flist[i]->d_name,".")||!strcmp(flist[i]->d_name,"..")){
@@ -1397,7 +1419,12 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 	    // exit(1);
 	}
 
+
 	if(S_ISREG(tempstat.st_mode)){
+
+	memset(node->listfname,0,PATH_SIZE);
+	strcpy(node->listfname,flist[i]->d_name);
+	printf("listfname:%s\n",node->listfname);
 
 	    strcpy(node->listfpath,temppath);
 	    fsize=0;
@@ -1409,7 +1436,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
 	    Clist_insert(node);
 	    //printf("fize(buf.st_size):%d\n",node->fsize);
-	    //printf("listfpath:%s\n",node->listfpath);
+	    printf("listfpath:%s\n",node->listfpath);
 	    memset(relativepath,0,PATH_SIZE);	
 	    makeRelativeP(node->listfpath,relativepath,delcurdir);
 	    memset(node->relP,0,PATH_SIZE);
@@ -1435,6 +1462,13 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
 	}
 	if((tempstat.st_mode&S_IFDIR)==S_IFDIR){
+	memset(node->listdname,0,PATH_SIZE);
+
+	    strcpy(node->listdname,flist[i]->d_name);
+	    printf("listdname:%s\n",node->listdname);
+	    strcpy(node->listdpath,temppath);
+	    printf("listdpath:%s\n",node->listdpath);
+	    Clist_insert(node);
 
 	    //depth만큼만 하부 디렉토리 검색을 한다.
 	    if(sizeoptflag==ONLYDIR){
@@ -1479,9 +1513,9 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 			for(int i=0;i<14-strlen(node->listfname);i++){
 			    sprintf(treefname,"%s-",treefname);
 			}
-if(indent==1){
-printf("%15s", "");
-}
+			if(indent==1){
+			    printf("%15s", "");
+			}
 			printf("|%-15s",treefname);
 		    }
 		    else//empty dir 
@@ -1499,6 +1533,19 @@ printf("%15s", "");
     indent--;
     chdir("..");
     //printf("-------------------------scanning dir for CNode list ends\n");
+}
+int list_search_CNode(char *cmpfname){//checkdir에 존재하는 파일인지 확인.
+    CNode *searchnode;
+    searchnode=chead;
+    while(searchnode){
+	printf("searching name:%s d:%s\n",searchnode->listfname,searchnode->listdname);
+	if(!strcmp(searchnode->listfname,onlyfname))
+	    return 1;//existing file.
+	if(!strcmp(searchnode->listdname,onlyfname))
+	    return 2;//existing directory.
+	searchnode=searchnode->next;
+    }
+    return 0;//not existing file.
 }
 void Clist_insert(CNode *newNode){//list에 node추가
     newNode->next=NULL;

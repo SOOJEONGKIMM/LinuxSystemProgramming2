@@ -148,7 +148,7 @@ void forlogtxt(void){//cmp base&new
 		    update=1;
 		    modified=1;
 		    printf("MODIFY LOG!!!!!!!!!!!!!!!!\n");
-		    break;
+		    //break;
 		}
 
 		Nmodnode=Nmodnode->next;
