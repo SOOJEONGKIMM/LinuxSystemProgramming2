@@ -405,7 +405,7 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	}
 	searchnode=searchnode->next;
     }
-    printf("found fnamepath:%s\n",fnamepath);
+    //printf("found fnamepath:%s\n",fnamepath);
     /*if(access(onlyfname,F_OK)!=0){
       printf("%s is not a existing file\n",onlyfname);
       chdir(curdir);
@@ -442,10 +442,10 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
     //printf("checkoverlap:%s\n",checkoverlap);
     while(printdup){
 	if(!strcmp(printdup->listfname,onlyfname)){
-	    printf("overlap exists\n");
+	    //printf("overlap exists\n");
 	    //if(strlen(printdup->dupped)!=0)
 	    overlapped=1;
-	    printf("overlapped:%d\n",overlapped);
+	    //printf("overlapped:%d\n",overlapped);
 	    //printf("%d.  %s\n    %s    %s\n",dupindex,onlyfname,printdup->dtime,printdup->mtime);
 	    dupindex++;
 	    printdup->dupindex=dupindex;//중복횟수 셈
@@ -553,7 +553,7 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
     char tmpdelinfo[PATH_SIZE];
     char tmpdelfiles[PATH_SIZE];
     if(info_sizing()){
-	printf("from old files, delete info and files's file...");
+	//printf("from old files, delete info and files's file...");
 	Node *infodel=(Node*)malloc(sizeof(infodel));
 	memset(infodel,0,sizeof(infodel));
 	memset(tmpdelfname,0,FILE_SIZE);
@@ -564,7 +564,7 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 
 	list_print();//debug
 	memset(tmpdelfname,0,PATH_SIZE);
-	printf("theadd:%s\n",head->listfname);//가장 오래된 파일. 
+	//printf("theadd:%s\n",head->listfname);//가장 오래된 파일. 
 	strcpy(tmpdelfname,head->listfname);
 	chdir(infodir);
 	realpath(tmpdelfname,tmpdelinfo);
@@ -805,7 +805,7 @@ void do_sizeOptDIR(char *dirname){
     while((entry=readdir(dp))!=NULL){
 	lstat(entry->d_name,&buf);
 	if(S_ISREG(buf.st_mode)){
-	    printf("Dir's file:%s\n",entry->d_name);
+	    //printf("Dir's file:%s\n",entry->d_name);
 	    fsize=0;
 	    fsize=buf.st_size;
 	}
@@ -1473,7 +1473,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
 	    memset(node->listfname,0,PATH_SIZE);
 	    strcpy(node->listfname,flist[i]->d_name);
-	    printf("listfname:%s\n",node->listfname);
+	    //printf("listfname:%s\n",node->listfname);
 
 	    strcpy(node->listfpath,temppath);
 	    fsize=0;
@@ -1485,7 +1485,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
 	    Clist_insert(node);
 	    //printf("fize(buf.st_size):%d\n",node->fsize);
-	    printf("listfpath:%s\n",node->listfpath);
+	    //printf("listfpath:%s\n",node->listfpath);
 	    memset(relativepath,0,PATH_SIZE);	
 	    makeRelativeP(node->listfpath,relativepath,delcurdir);
 	    memset(node->relP,0,PATH_SIZE);
@@ -1514,9 +1514,9 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 	    memset(node->listdname,0,PATH_SIZE);
 
 	    strcpy(node->listdname,flist[i]->d_name);
-	    printf("listdname:%s\n",node->listdname);
+	    //printf("listdname:%s\n",node->listdname);
 	    strcpy(node->listdpath,temppath);
-	    printf("listdpath:%s\n",node->listdpath);
+	    //printf("listdpath:%s\n",node->listdpath);
 	    Clist_insert(node);
 
 	    //depth만큼만 하부 디렉토리 검색을 한다.
@@ -1536,7 +1536,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 	    }
 	    if(sizeoptflag==ALL||sizeoptflag==TREE){//하위 디렉토리 끝까지 가는 경우 
 		indent++;
-		strcpy(node->listfpath,temppath);
+		strcpy(node->listdpath,temppath);
 
 		//printf("~~~~~~~~~~~~~~SCANDIR RECURSIVE UNTIL END~~~~~~~~~~~~~\n");
 
@@ -1544,11 +1544,11 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 		    scanningCdir(flist[i]->d_name,depth,ALL,0,delcurdir);
 		else if(sizeoptflag==TREE){
 		    memset(treefname,0,PATH_SIZE);
-		    sprintf(treefname,"-%s",node->listfname);
+		    sprintf(treefname,"-%s",node->listdname);
 		    int    file_count = 0;//[TREE]빈디렉토리라면 dir--------출력을 오른쪽에 해줘서는 안됨.
 		    struct dirent *dir_ent;
 		    DIR  *dp;
-		    dp=opendir(node->listfpath);
+		    dp=opendir(node->listdpath);
 		    while ((dir_ent = readdir(dp)) != NULL)
 		    {
 			if (strcmp(dir_ent->d_name, ".") == 0 || strcmp(dir_ent->d_name, "..") == 0)
@@ -1556,15 +1556,15 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
 			++file_count;
 		    }
-		    emptydir=lstat(node->listfpath,&checkemptybuf);
+		    emptydir=lstat(node->listdpath,&checkemptybuf);
 		    //printf("PP%d",emptydir);
 		    if(file_count>0){
-			for(int i=0;i<14-strlen(node->listfname);i++){
+			for(int i=0;i<14-strlen(node->listdname);i++){
 			    sprintf(treefname,"%s-",treefname);
 			}
-			if(indent==1){
-			    printf("%15s", "");
-			}
+			//if(indent==1){
+			 //   printf("%15s", "");
+			//}
 			printf("|%-15s",treefname);
 		    }
 		    else//empty dir 
@@ -1587,7 +1587,7 @@ int list_search_CNode(char *cmpfname){//checkdir에 존재하는 파일인지 �
     CNode *searchnode;
     searchnode=chead;
     while(searchnode){
-	printf("searching name:%s d:%s\n",searchnode->listfname,searchnode->listdname);
+	//printf("searching name:%s d:%s\n",searchnode->listfname,searchnode->listdname);
 	if(!strcmp(searchnode->listfname,onlyfname))
 	    return 1;//existing file.
 	if(!strcmp(searchnode->listdname,onlyfname))
@@ -1638,7 +1638,7 @@ void swap_Cnode_data(CNode *list1, CNode *list2){
     strcpy(list1->relP, relP);
     list1->fsize=fsize;
     list1->chead = chead;
-    printf("list1:%s,list2:%s\n",list1->listfname,list2->listfname);
+    //printf("list1:%s,list2:%s\n",list1->listfname,list2->listfname);
 }
 
 void swap_node_data(Node *list1, Node *list2) {
@@ -1757,24 +1757,15 @@ void list_sort(int (*cmp)()){
     }
 }
 
-void list_print(){
+void list_print(){//recover -l option
     Node *cur;
     cur=head;
     int i=0;
     while(cur->next!=NULL){
 	if(cur->listfname!=NULL&&cur->dtime!=NULL && cur->optldt!=0){
-	    printf("%d %s %s", cur->optldt,cur->listfname, cur->dtime);
+	    printf("%s %s",cur->listfname, cur->dtime);
 	}
 	cur=cur->next;
     }
-    printf("%d %s %s\n",cur->optldt,cur->listfname, cur->dtime);
+    printf("%s %s\n",cur->listfname, cur->dtime);
 }
-int list_compare(char *onlyfname){
-
-
-
-}
-
-
-
-
