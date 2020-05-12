@@ -174,7 +174,7 @@ void forlogtxt(void){//cmp base&new
 		write_logtxt(Ncrenode->listfname,"create",NULL);
 		update=1;
 		printf("DELETE LOG!!!!!!!!!!!!!!!!\n");
-		break;
+		//break;
 	    }
 	    //  Ndelnode=Ndelnode->next;
 	    Ncrenode=Ncrenode->next;
@@ -198,7 +198,7 @@ void forlogtxt(void){//cmp base&new
 		    write_logtxt(delnode->listfname,"delete",NULL);
 		    update=1;
 		    printf("DELETE LOG!!!!!!!!!!!!!!!!\n");
-		    break;
+		   // break;
 		}
 		//  Ndelnode=Ndelnode->next;
 		delnode=delnode->next;
@@ -285,7 +285,7 @@ int scanmondirBASE(char *searchdir,int inityes){
 	bfcnt+=1;
 	fsize=0;
 	fsize=stat(searchdir,&buf);//SIZE 
-	if(S_ISREG(buf.st_mode)){
+	if(!S_ISDIR(buf.st_mode)){
 	    memset(node->listfname,0,PATH_SIZE);
 	    strcpy(node->listfname,flist[i]->d_name);
 	    //   printf("node->listfname:%s\n",node->listfname);
@@ -405,7 +405,7 @@ int scanmondirBASE(char *searchdir,int inityes){
 	    nfcnt+=1;
 	    fsize=0;
 	    fsize=stat(searchdir,&buf);//SIZE
-	    if(S_ISREG(buf.st_mode)){
+	    if(!S_ISDIR(buf.st_mode)){
 		memset(node->listfname,0,PATH_SIZE);
 		strcpy(node->listfname,flist[i]->d_name);
 		//  printf("node->listfname:%s\n",node->listfname);
