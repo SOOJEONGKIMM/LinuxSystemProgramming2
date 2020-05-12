@@ -101,6 +101,18 @@ int check_opt(const char *str){
     return 1;
 
 }
+void ssu_runtime(struct timeval *begin_t, struct timeval *end_t)
+{
+    end_t->tv_sec -= begin_t->tv_sec;
+
+    if (end_t->tv_usec < begin_t->tv_usec) {
+	end_t->tv_sec--;
+	end_t->tv_usec += SECOND_TO_MICRO;
+    }
+
+    end_t->tv_usec -= begin_t->tv_usec;
+    printf("Runtime: %ld:%06ld(sec:usec)\n", end_t->tv_sec, end_t->tv_usec);
+}
 
 int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
     gettimeofday(&begin_t, NULL);
@@ -754,7 +766,7 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 	makeRelativeP(sizenode->listfpath,relativeP,curdir);
 
 	sizesum+=sizenode->fsize;
-	if(sizeoptd==1)
+	if(sizeoptd==1&&sizenode->fsize!=0)
 	    printf("%d     .%s\n",sizenode->fsize,relativeP);
 
 	sizenode=sizenode->next;
@@ -777,57 +789,7 @@ void makeRelativeP(char *absolutepath, char *relativepath, char *curdir){
 	    continue;
 	}
 	*relativepath++=*absolutepath++;
-	//printf("-------------------------------------------rel:%s, ab:%s\n",relativepath, absolutepath);
     }
-}
-
-
-void do_sizeOptDIR(char *dirname){
-    int dirsizesum=0;
-    char realPflistname[PATH_SIZE];
-    char relativeP[PATH_SIZE];
-    DIR *dp=NULL;
-    struct dirent* entry=NULL;
-    struct stat buf;
-    int fsize;
-
-    /*    CNode *sizenode=(CNode*)malloc(sizeof(CNode));
-	  memset(sizenode,0,sizeof(sizenode));
-	  sizenode=chead;
-	  scanningCdir(onlyfname,0,1,0,dirname);*/
-
-    chdir(curdir);
-    realpath(realPflistname,dirname);
-    if((dp=opendir(realPflistname))==NULL){
-	fprintf(stderr,"opendir error fot %s",dirname);
-	exit(1);
-    }
-    while((entry=readdir(dp))!=NULL){
-	lstat(entry->d_name,&buf);
-	if(S_ISREG(buf.st_mode)){
-	    //printf("Dir's file:%s\n",entry->d_name);
-	    fsize=0;
-	    fsize=buf.st_size;
-	}
-	makeRelativeP(realPflistname,relativeP,curdir);
-
-	/* for(int i=0;i<strlen(realPflistname);i++){
-	   if(realPflistname[i]=='check'||realPflistname[i]=='trash')
-	   break;
-	   }
-	   int a=0;
-	   for(int j=0;j<strlen(realPflistname)&&realPflistname!=' ';j++){
-	   relativeP[a]=realPflistname[j];
-	   a++;
-	   }*/
-
-	dirsizesum+=fsize;
-	//sizenode=sizenode->next;
-    }
-
-    //depth -d옵션 없이 그냥 디렉토리에 대한 정보만 입력하는 경우
-    printf("%d     .%s\n",dirsizesum,relativeP);
-
 }
 
 int do_recoverOpt(char *str){
@@ -1638,7 +1600,6 @@ void swap_Cnode_data(CNode *list1, CNode *list2){
     strcpy(list1->relP, relP);
     list1->fsize=fsize;
     list1->chead = chead;
-    //printf("list1:%s,list2:%s\n",list1->listfname,list2->listfname);
 }
 
 void swap_node_data(Node *list1, Node *list2) {
@@ -1653,7 +1614,6 @@ void swap_node_data(Node *list1, Node *list2) {
 
     List *head;
 
-    //tmp
     strcpy(listfpath, list2->listfpath);
     strcpy(listfname, list2->listfname);
     strcpy(dtime, list2->dtime);
