@@ -14,7 +14,7 @@
 #include<sys/wait.h>
 
 //pthread_mutex_t mutex;
-
+#define SECOND_TO_MICRO 1000000
 #define BUFFER_SIZE 1024
 #define PATH_SIZE 256
 #define FILE_SIZE 128
@@ -26,6 +26,7 @@
 #define DEPTHEXIST 2
 #define TREE 3
 
+struct timeval begin_t, end_t;
 
 //char *logfname="log.txt";
 char onlyfname[PATH_SIZE];
@@ -52,7 +53,7 @@ typedef struct _node{//recover l option
     int dupindex;
     char dupped[TM_SIZE];//info정보에 그다음내용이 있다면 중복파일이라는 걸 확인 위해
     int optldt;
-char dtimestr[TM_SIZE];
+    char dtimestr[TM_SIZE];
     struct tm delt;
     int fsize;
     List *head;
@@ -115,6 +116,8 @@ typedef struct fList{//연결리스트의 노드 구조체
 char cdir[256];//파일경로 저장
 
 //void scandirlog(char *scanningdir);
+void getting_time_of_day(char *wdir,char *mondir);
+void ssu_runtime(struct timeval *begin_t, struct timeval *end_t);
 void startdemon(char *curdir,char *checkdir);
 void forlogtxt(void);
 int scanmondirBASE(char *searchdir,int inityes);
@@ -145,6 +148,7 @@ int check_opt(const char *str);
 int get_deleteOpt(char *str);//DELETE [FILENAME] [ENDTIME] [OPTION]
 void deloptR_alarm(int k);
 int do_deleteOpt(void);//DELETE [FILENAME] [ENDTIME] [OPTION]
+int info_sizing(void);
 void relPtoFile(char *onlyfname,char *relPFile,char *ch);
 int do_sizeOpt(char *str);//SIZE [FILENAME] [OPTION]
 void makeRelativeP(char *absolutepath, char *relativepath, char *curdir);

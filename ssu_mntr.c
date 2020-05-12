@@ -103,6 +103,7 @@ int check_opt(const char *str){
 }
 
 int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
+    gettimeofday(&begin_t, NULL);
     char trashdir[PATH_SIZE];
     char filesdir[PATH_SIZE];//backup deleting file
     char infodir[PATH_SIZE];//deleting file info dir
@@ -248,6 +249,8 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	waitsec=endtimesecInt-alarmsetT.tm_sec;
 	if(waitmin<0){
 	    printf("[ENDTIME] is set wrong.\n");
+	    gettimeofday(&end_t,NULL);
+	    ssu_runtime(&begin_t, &end_t);
 	    ssu_mntr_play();
 	}
 	if(waitsec<0){
@@ -292,8 +295,11 @@ void deloptR_alarm(int k){
 			do_deleteOpt();
 			exit(0);//자식프로세스를 죽여야함.
 		    }
-		    else if(!strcmp(recheckbuf,"n"))
+		    else if(!strcmp(recheckbuf,"n")){
+			gettimeofday(&end_t,NULL);
+			ssu_runtime(&begin_t, &end_t);
 			ssu_mntr_play();
+		    }
 		    else
 			continue;
 		}
@@ -381,6 +387,8 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	printf("%s is not a existing file\n",onlyfname);
 	chdir(curdir);
 	endtimeExist=0;//init
+	gettimeofday(&end_t,NULL);
+	ssu_runtime(&begin_t, &end_t);
 	ssu_mntr_play();
     }
 
@@ -540,22 +548,11 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	fclose(fp);
     }
 
-    //info디렉토리 크기가 2KB가 넘을 경우 오래된파일부터 files info에서 모두 삭제.
-    Node *infosize=(Node*)malloc(sizeof(infosize));
-    memset(infosize,0,sizeof(infosize));
-    infosize=head;
-    int infosizesum=0;
 
-    while(infosize){
-	infosizesum+=infosize->fsize;
-	printf("infosize fsize:%d\n",infosize->fsize);	
-	printf("infosizesum:%d\n",infosizesum);	
-	infosize=infosize->next;//info 누적 사이즈 계산 
-    }
     char tmpdelfname[FILE_SIZE];
     char tmpdelinfo[PATH_SIZE];
     char tmpdelfiles[PATH_SIZE];
-    while(infosizesum>2*1024){
+    if(info_sizing()){
 	printf("from old files, delete info and files's file...");
 	Node *infodel=(Node*)malloc(sizeof(infodel));
 	memset(infodel,0,sizeof(infodel));
@@ -576,7 +573,10 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	realpath(tmpdelfname,tmpdelfiles);
 	remove(tmpdelfiles);//files에서 삭제
 
+
 	chdir(curdir);
+	//break;
+
     }
     if(endtimeExist==1){
 	printf("Deletion has ended in setted [ENDTIME].\nPlease enter ENTERKEY twice.\n");
@@ -587,11 +587,32 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
     endtimeExist=0;//init
 
     chdir(curdir);
+    gettimeofday(&end_t,NULL);
+    ssu_runtime(&begin_t, &end_t);
 
 
 
     return 0;
 }
+int info_sizing(void){
+    //info디렉토리 크기가 2KB가 넘을 경우 오래된파일부터 files info에서 모두 삭제.
+    Node *infosize=(Node*)malloc(sizeof(infosize));
+    memset(infosize,0,sizeof(infosize));
+    infosize=head;
+    int infosizesum=0;
+
+    while(infosize){
+	infosizesum+=infosize->fsize;
+	//printf("infosize fsize:%d\n",infosize->fsize);	
+	//printf("infosizesum:%d\n",infosizesum);	
+	infosize=infosize->next;//info 누적 사이즈 계산 
+    }
+    if(infosizesum>2*1024)
+	return 1;
+    else
+	return 0;
+}
+
 void relPtoFile(char *onlyfname,char *relPFile,char *ch){
     while(*onlyfname){
 	if(*onlyfname==*ch){
@@ -603,6 +624,7 @@ void relPtoFile(char *onlyfname,char *relPFile,char *ch){
     }
 }
 int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
+    gettimeofday(&begin_t, NULL);
     chead=NULL;//init first!  
     char fnamepath[PATH_SIZE];//sizing file name path
     char sizeopt[OPT_SIZE];
@@ -677,6 +699,8 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 	}
 	else{
 	    printf("option is wrong\n");
+	    gettimeofday(&end_t,NULL);
+	    ssu_runtime(&begin_t, &end_t);
 	    return 0;
 	}
 	//void scanningCdir(char *searchdir,int depth,int sizeoptflag,int depthopt,int indent)//원형
@@ -699,7 +723,10 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 		    memset(relativeP,0,PATH_SIZE);
 		    makeRelativeP(fnode->listfpath,relativeP,curdir);
 		    printf("%d     .%s\n",fnode->fsize,relativeP);
-
+		    chdir(curdir);
+		    indent=0;
+		    gettimeofday(&end_t,NULL);
+		    ssu_runtime(&begin_t, &end_t);
 		    return 0;
 		}
 	    }
@@ -737,6 +764,8 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 
     chdir(curdir);
     indent=0;
+    gettimeofday(&end_t,NULL);
+    ssu_runtime(&begin_t, &end_t);
 
     return 0;
 }
@@ -802,6 +831,7 @@ void do_sizeOptDIR(char *dirname){
 }
 
 int do_recoverOpt(char *str){
+    gettimeofday(&begin_t, NULL);
     char removeinfopath[PATH_SIZE];//backup deleting file
     char fnamepath[PATH_SIZE];//deleting file name path
     char temppath[PATH_SIZE];//for checking info dir file list
@@ -968,7 +998,7 @@ int do_recoverOpt(char *str){
 		printf("%d.  %s\n    %s    %s\n",printdup->dupindex,printdup->listfname,printdup->dtime,printdup->mtime);
 		dupindex++;
 	    }
-	printdup=printdup->next;
+	    printdup=printdup->next;
 	}
     }
     if(overlapped==1){
@@ -989,16 +1019,20 @@ int do_recoverOpt(char *str){
 	fprintf(stderr,"DIR:%s can't be found.\n",filesdir);
 	perror("chdir");
     }
+
+
     //l option이 있다면 먼저 l option처리해줌.
     //해당파일이 없거나 파일의 복구 경로가 없다면 에러처리 후 프롬프트 전환 
     if(overlapped==0){
 	if(access(onlyfname,F_OK)!=0){
 	    printf("There is no %s in the 'trash' directory\n",onlyfname);
 	    chdir(curdir);
+	    gettimeofday(&end_t,NULL);
+	    ssu_runtime(&begin_t, &end_t);
 	    ssu_mntr_play();
 	}
-
 	memset(fnamepath,0,PATH_SIZE);
+
 	//복구파일의 절대경로 가져옴
 	if(realpath(onlyfname,fnamepath)==NULL){
 	    printf("There is no %s in the 'trash' directory\n",onlyfname);
@@ -1009,6 +1043,8 @@ int do_recoverOpt(char *str){
 	if(access(duponlyfname,F_OK)!=0){
 	    printf("There is no %s in the 'trash' directory\n",duponlyfname);
 	    chdir(curdir);
+	    gettimeofday(&end_t,NULL);
+	    ssu_runtime(&begin_t, &end_t);
 	    ssu_mntr_play();
 	}
 
@@ -1061,28 +1097,36 @@ int do_recoverOpt(char *str){
 
     chdir(curdir);
 
-    printf("before returning RECOVER: curdir:%s\n",curdir);
+    //printf("before returning RECOVER: curdir:%s\n",curdir);
+    gettimeofday(&end_t,NULL);
+    ssu_runtime(&begin_t, &end_t);
 
 
     return 0;
 }
 
 int do_treeOpt(char *str){
+    gettimeofday(&begin_t, NULL);
     char curdir[PATH_SIZE];
     memset(curdir,0,PATH_SIZE);
     strcpy(curdir,getcwd(NULL,0));
     printf("%-1s","check----------");
     //(searchdir, depth, optflag, indentinit, delcurdir)
     scanningCdir(NULL,0,TREE,1,curdir);
+    gettimeofday(&end_t,NULL);
+    ssu_runtime(&begin_t, &end_t);
 
     return 0;
 }
 
 int do_helpOpt(char *str){
+    gettimeofday(&begin_t, NULL);
     printf("DELETE [FILENAME] [ENDTIME] [OPTION] (OPTION:-r -i)\n");
     printf("SIZE [FILENAME] [OPTION] (OPTION:-d)\n");
     printf("RECOVER [FILENAME] [OPTION] (OPTION:-l)\n");
     printf("TREE\n");
+    gettimeofday(&end_t,NULL);
+    ssu_runtime(&begin_t, &end_t);
     return 0;
 }
 void scanningTdir(char *searchdir){
@@ -1284,7 +1328,7 @@ void scanningTdir(char *searchdir){
 	    memset(node->dtime,0,TM_SIZE);
 	    node->fsize=0;
 	    node->optldt=optldtimeInt;
-	    printf("%d\n",node->optldt);
+	    //printf("%d\n",node->optldt);
 	    strcpy(node->listfname,flist[i]->d_name);//filename only
 	    strcpy(node->mtime,mtime);//newNode->mtime;
 	    strcpy(node->dtime,dtime);

@@ -28,6 +28,7 @@ int main(void){
     // printf("checkdir:%s\n",mondir);
     scanmondirBASE(mondir,1);
     startdemon(wdir,mondir);
+    //getting_time_of_day(wdir,mondir);
     //chdir(wdir);
     /*switch(pid=fork()){
       case 0:
@@ -36,9 +37,26 @@ int main(void){
     default:
     ssu_mntr_play();
     }*/
-
     //옵션입력으로 넘어감.
     return 0;
+}
+void getting_time_of_day(char *wdir,char *mondir){
+    gettimeofday(&begin_t, NULL);
+    gettimeofday(&end_t,NULL);
+    ssu_runtime(&begin_t, &end_t);
+}
+
+void ssu_runtime(struct timeval *begin_t, struct timeval *end_t)
+{
+    end_t->tv_sec -= begin_t->tv_sec;
+
+    if (end_t->tv_usec < begin_t->tv_usec) {
+	end_t->tv_sec--;
+	end_t->tv_usec += SECOND_TO_MICRO;
+    }
+
+    end_t->tv_usec -= begin_t->tv_usec;
+    printf("Runtime: %ld:%06ld(sec:usec)\n", end_t->tv_sec, end_t->tv_usec);
 }
 void startdemon(char *curdir,char *checkdir){
     char wdir[PATH_SIZE];
@@ -198,7 +216,7 @@ void forlogtxt(void){//cmp base&new
 		    write_logtxt(delnode->listfname,"delete",NULL);
 		    update=1;
 		    printf("DELETE LOG!!!!!!!!!!!!!!!!\n");
-		   // break;
+		    // break;
 		}
 		//  Ndelnode=Ndelnode->next;
 		delnode=delnode->next;
