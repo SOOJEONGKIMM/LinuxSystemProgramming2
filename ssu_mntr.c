@@ -21,12 +21,10 @@ void ssu_mntr_play(void){
     while(1){
 	memset((char*)cmdbuf,0,BUFFER_SIZE);
 
-	//printf("d:%d,s:%d,r:%d,t:%d,e:%d,h:%d,inv:%d",deleteOpt,sizeOpt,recoverOpt,treeOpt,exitOpt,helpOpt,invalidOpt);//debug
 	printf("20162969>");
 	fgets(cmdbuf,BUFFER_SIZE,stdin);
 
 	if(cmdbuf[0]=='\n'){//엔터만 입력시 프롬프트 재출력
-	    printf("entered");
 	    continue;
 	}
 	cmdbuf[strlen(cmdbuf)-1]=0;//개행문자제거 
@@ -48,6 +46,7 @@ void ssu_mntr_play(void){
 	    do_treeOpt(cmdbuf);
 	}
 	else if(!deleteOpt&!sizeOpt&!recoverOpt&!treeOpt&exitOpt&!helpOpt&!invalidOpt){
+	    printf("Program is ending, Bye.\n");
 	    exit(0);
 	}
 	else if(!deleteOpt&!sizeOpt&!recoverOpt&!treeOpt&!exitOpt&helpOpt&!invalidOpt){
@@ -155,14 +154,21 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	a++;
 	i++;
     }
-    printf("onlyfname:%s",onlyfname);
+    if(strlen(onlyfname)==0){
+	printf("no filename input.\n");
+	gettimeofday(&end_t,NULL);
+	ssu_runtime(&begin_t, &end_t);
+
+	return 0;
+    }
+    //printf("onlyfname:%s",onlyfname);
     i=j;
     //[ENDTIME] 추출 
     while(i<len && str[i]==' ')
 	i++;
     if(i>=len){//[ENDTIME]주어지지않은경우
 	endtimeExist=0;
-	printf("\nendTE:%d\n",endtimeExist);
+	//printf("\nendTE:%d\n",endtimeExist);
     }
     else{
 	endtimeExist=1;
@@ -170,7 +176,7 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	for(j=i;j<len && str[j]!=' ';j++){//2020-05-05
 	    if(str[j]=='-'&&str[j+1]=='i'){//[ENDTIME]없이 바로 -i만 들어온 경우
 		endtimeExist=0;
-		printf("came here\n");
+		//printf("came here\n");
 		break;
 	    }
 	    enddatestr[a]=str[j];
@@ -190,8 +196,8 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 		i++;
 	    }
 	    i=j;
-	    printf("enddatestr:%s\n",enddatestr);
-	    printf("endtimestr:%s\n",endtimestr);
+	    //printf("enddatestr:%s\n",enddatestr);
+	    //printf("endtimestr:%s\n",endtimestr);
 	}
     }
     //[OPTION] 추출 
@@ -205,7 +211,7 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	a++;
 	i++;
     }
-    printf("delopt:%s\n",delopt);
+    //printf("delopt:%s\n",delopt);
     i=j;
     if(!strcmp(delopt,"-i")){
 	deloptI=1;//전역변수로 선언하고, do_deleteOpt()에서 옵션수행할때 다시 플래그 0으로 초기화할것.
@@ -214,8 +220,8 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	deloptR=1;
     }
 
-    printf("deloptR:%d\n",deloptR);
-    printf("\nendTE:%d",endtimeExist);
+    //printf("deloptR:%d\n",deloptR);
+    //printf("\nendTE:%d",endtimeExist);
     if(endtimeExist==0)
 	do_deleteOpt();
     else{
@@ -229,7 +235,7 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	printf("setting alarm\n");
 	time_t alarmsett=time(NULL);
 	alarmsetT=*localtime(&alarmsett);
-	printf("alarmsetT:%d일 %d:%d:%d\n",alarmsetT.tm_mday,alarmsetT.tm_hour,alarmsetT.tm_min,alarmsetT.tm_sec);
+	//printf("alarmsetT:%d일 %d:%d:%d\n",alarmsetT.tm_mday,alarmsetT.tm_hour,alarmsetT.tm_min,alarmsetT.tm_sec);
 	//sprintf(alarmTmin,"%d",alarmsetT.tm_min);
 	j=0;
 	int i=0;
@@ -251,8 +257,8 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	    endtimesec[i]=endtimestr[j+1];
 	    j++;
 	}
-	printf("endtimemin:%s\n",endtimemin);
-	printf("endtimesec:%s\n",endtimesec);
+	//printf("endtimemin:%s\n",endtimemin);
+	//printf("endtimesec:%s\n",endtimesec);
 	int endtimeminInt=atoi(endtimemin);
 	int endtimesecInt=atoi(endtimesec);
 	//char alarmsetT[TM_SIZE];
@@ -278,7 +284,6 @@ int get_deleteOpt(char *str){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	alarm(waitsec);//예약시간이 되면 alarm이 SIGALRM을 전송한다.
 
 
-	printf("after alarm\n");
     }
 
 
@@ -296,7 +301,7 @@ void deloptR_alarm(int k){
     //vfork 생성 (자식/부모프로세스에서 삭제작업 진행)
     switch(pid=fork()){
 	case 0:
-	    printf("I'm child. My PID is %d\n",getpid());
+	    //printf("I'm child. My PID is %d\n",getpid());
 	    if(deloptR==1){//do_deleteOpt()호출 전 재확인 문구
 		while(1){
 		    printf("Delete [y/n]?");
@@ -490,7 +495,7 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	mkdir(trashdir,0744);
 	//trashdir로 이동
 	if(chdir(trashdir)<0){//returns 0 if success
-	    fprintf(stderr,"PDIR:%s can't be found.\n",trashdir);
+	    fprintf(stderr,"DIR:%s can't be found.\n",trashdir);
 	    perror("chdir");
 	    exit(1);
 	}
@@ -678,6 +683,7 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 	sizeoptd=0;
     }
 
+    int isdir=0;
     char curdir[PATH_SIZE];
     memset(curdir,0,PATH_SIZE);
     strcpy(curdir,getcwd(NULL,0));
@@ -707,6 +713,12 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 		i++;
 	    }
 	    depth=atoi(depthbuf);
+	    if(depth<1){
+		printf("option is wrong\n");
+		gettimeofday(&end_t,NULL);
+		ssu_runtime(&begin_t, &end_t);
+		return 0;
+	    }
 	    //depth=depth-1;//check -d 2이면 ./check/1.c
 	}
 	else{
@@ -715,8 +727,31 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 	    ssu_runtime(&begin_t, &end_t);
 	    return 0;
 	}
+	//directory or file? 
+	char *tmp1;
+	char tmp2[PATH_SIZE];
+	memset(tmp2,0,PATH_SIZE);
+	if(strstr(onlyfname,"/")!=0){
+	    tmp1=strrchr(onlyfname,'/');
+	    relPtoFile(tmp1,tmp2,"/");
+	}
 	//void scanningCdir(char *searchdir,int depth,int sizeoptflag,int depthopt,int indent)//원형
-	scanningCdir(onlyfname,depth-1,DEPTHEXIST,1,curdir);
+	scanningCdir(NULL,0,ALL,1,curdir);//list_search_CNode위해 
+	chdir(curdir);
+	if(list_search_CNode(tmp2)==1){//file
+	    delEchar(onlyfname,tmp1);
+	    scanningCdir(onlyfname,depth,DEPTHEXIST,1,checkdir);
+	}
+	else if(list_search_CNode(tmp2)==2||list_search_CNode(onlyfname)==2){//directory
+	    isdir=1;
+	    scanningCdir(onlyfname,depth-1,DEPTHEXIST,1,curdir);
+	}
+	else{
+	    printf("file name doesn't exist.\n");
+	    gettimeofday(&end_t,NULL);
+	    ssu_runtime(&begin_t, &end_t);
+	    return 0;
+	}
     }
 
     if(sizeoptd==0){
@@ -753,6 +788,9 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
     memset(sizenode,0,sizeof(sizenode));
     sizenode=chead;
 
+    int dirdepthzero=0;
+    if(isdir==1&&depth==1)
+	dirdepthzero=1;
 
     //list_sortC(str_cmp);
 
@@ -766,12 +804,13 @@ int do_sizeOpt(char *str){//SIZE [FILENAME] [OPTION]
 	makeRelativeP(sizenode->listfpath,relativeP,curdir);
 
 	sizesum+=sizenode->fsize;
-	if(sizeoptd==1&&sizenode->fsize!=0)
+	if(sizeoptd==1&&sizenode->fsize!=0&&dirdepthzero!=1){
 	    printf("%d     .%s\n",sizenode->fsize,relativeP);
+	}
 
 	sizenode=sizenode->next;
     }
-    if(sizeoptd==0)
+    if(sizeoptd==0||(isdir==1&&depth==1))
 	printf("%d     ./%s\n",sizesum,onlyfname);
 
     chdir(curdir);
@@ -790,6 +829,31 @@ void makeRelativeP(char *absolutepath, char *relativepath, char *curdir){
 	}
 	*relativepath++=*absolutepath++;
     }
+}
+
+int delEchar(char *buf, char *a){//문자열에서 특정문자열 제거.(뒤에서부터)
+    int ik=strlen(buf),ib=strlen(a);
+    if(ib>0&&ik>=ib){//삭제할 문자가 있으면 
+	ib--; ik--;//문자열의 배열끝 기억(배열은 0부터 시작)
+	int n,i=ik;
+	while(i>=0){
+	    if(buf[i]==a[ib]){//문자열 buf에서 문자열 a의 마지막 문자를 찾으면 
+		for(n=ib;buf[i]==a[n];n--){
+		    if(n==0){//같은 문자를 찾으면 
+			for(;buf[i+ib]!='\0';i++){//buf에서 문자삭제
+			    buf[i]=buf[i+ib+1];
+			}
+			buf[ik-ib]='\0';
+			return 1;
+		    }
+		    i--;
+		}
+		continue;
+	    }
+	    i--;
+	}
+    }
+    return 0;
 }
 
 int do_recoverOpt(char *str){
@@ -844,6 +908,14 @@ int do_recoverOpt(char *str){
 	a++;
 	i++;
     }
+    if(strlen(onlyfname)==0){
+	printf("no filename input.\n");
+	gettimeofday(&end_t,NULL);
+	ssu_runtime(&begin_t, &end_t);
+
+	return 0;
+    }
+
     //      printf("onlyfname:%s",onlyfname);
     i=j;
     //[OPTION] 추출 
@@ -998,7 +1070,9 @@ int do_recoverOpt(char *str){
 	//복구파일의 절대경로 가져옴
 	if(realpath(onlyfname,fnamepath)==NULL){
 	    printf("There is no %s in the 'trash' directory\n",onlyfname);
-	    exit(1);
+	    gettimeofday(&end_t,NULL);
+	    ssu_runtime(&begin_t, &end_t);
+	    return 0;
 	}
     }
     if(overlapped==1){
@@ -1014,7 +1088,9 @@ int do_recoverOpt(char *str){
 	//복구파일의 절대경로 가져옴
 	if(realpath(duponlyfname,fnamepath)==NULL){
 	    printf("There is no %s in the 'trash' directory\n",duponlyfname);
-	    exit(1);
+	    gettimeofday(&end_t,NULL);
+	    ssu_runtime(&begin_t, &end_t);
+	    return 0;
 	}
     }
 
@@ -1051,15 +1127,12 @@ int do_recoverOpt(char *str){
     else
 	sprintf(removeinfopath,"%s/%s",infodir,onlyfname);
     int delinfo=remove(removeinfopath);
-    if(delinfo==0)
-	printf("infodir:%s deleted.\n",removeinfopath);
-    else
+    if(delinfo!=0)
 	printf("%s failed to delete .\n",removeinfopath);
 
 
     chdir(curdir);
 
-    //printf("before returning RECOVER: curdir:%s\n",curdir);
     gettimeofday(&end_t,NULL);
     ssu_runtime(&begin_t, &end_t);
 
@@ -1349,10 +1422,12 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
     char checkdir[PATH_SIZE];
     char searchdirbuf[PATH_SIZE];
     static int indent;
+    static int dcnt;
     static int depthcnt;//recursive num
     if(indentinit==1){
 	indent=0;//처음으로 스캔시작할때만 초기화되도록 
 	chead=NULL;
+	dcnt=0;
     }
     char temppath[PATH_SIZE];
     char treefname[BUFFER_SIZE];
@@ -1388,12 +1463,17 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
     struct dirent **flist;
 
     if(chdir(searchdirbuf)<0){//returns 0 if success
-	fprintf(stderr,"DIR:%s can't be found.\n",searchdirbuf);
-	perror("chdir");
+	printf("file or directory doesn't exist.\n");
+	gettimeofday(&end_t,NULL);
+	ssu_runtime(&begin_t, &end_t);
+	chdir(curdir);
+	ssu_mntr_play();
+	//	fprintf(stderr,"DIR:%s can't be found.\n",searchdirbuf);
+	//	perror("chdir");
     }
     if((countdirp=scandir(searchdirbuf,&flist,0,alphasort))<0){
 	fprintf(stderr,"scandir error for %s\n",searchdirbuf);
-	exit(1);
+	//	exit(1);
     }
     i=0;
     fcnt=countdirp-2;//file and dir num
@@ -1473,6 +1553,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 
 	}
 	if((tempstat.st_mode&S_IFDIR)==S_IFDIR){
+	    dcnt++;
 	    memset(node->listdname,0,PATH_SIZE);
 
 	    strcpy(node->listdname,flist[i]->d_name);
@@ -1524,9 +1605,9 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 			for(int i=0;i<14-strlen(node->listdname);i++){
 			    sprintf(treefname,"%s-",treefname);
 			}
-			//if(indent==1){
-			 //   printf("%15s", "");
-			//}
+			if(indent==1&&dcnt!=1){
+			    printf("%15s", "");
+			}
 			printf("|%-15s",treefname);
 		    }
 		    else//empty dir 
@@ -1549,10 +1630,10 @@ int list_search_CNode(char *cmpfname){//checkdir에 존재하는 파일인지 �
     CNode *searchnode;
     searchnode=chead;
     while(searchnode){
-	//printf("searching name:%s d:%s\n",searchnode->listfname,searchnode->listdname);
-	if(!strcmp(searchnode->listfname,onlyfname))
+	//	printf("searching name:%s d:%s\n",searchnode->listfname,searchnode->listdname);
+	if(!strcmp(searchnode->listfname,cmpfname))
 	    return 1;//existing file.
-	if(!strcmp(searchnode->listdname,onlyfname))
+	if(!strcmp(searchnode->listdname,cmpfname))
 	    return 2;//existing directory.
 	searchnode=searchnode->next;
     }
