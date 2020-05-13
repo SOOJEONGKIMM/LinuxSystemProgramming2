@@ -2,18 +2,17 @@
 #include<stdlib.h>
 #include<unistd.h>//getcwd()
 #include<fcntl.h>
-#include<sys/stat.h>//검색된결과값상태저장하는 구조체 stat
+#include<sys/stat.h>
 #include<sys/types.h>
 #include<sys/time.h>
 #include<pthread.h>
 #include<string.h>
-#include<dirent.h>//stddir()
+#include<dirent.h>//scandir()
 #include<time.h>
 #include<errno.h>
 #include<signal.h>
 #include<sys/wait.h>
 
-//pthread_mutex_t mutex;
 #define SECOND_TO_MICRO 1000000
 #define BUFFER_SIZE 1024
 #define PATH_SIZE 256
@@ -28,9 +27,7 @@
 
 struct timeval begin_t, end_t;
 
-//char *logfname="log.txt";
 char onlyfname[PATH_SIZE];
-//int dupindex;
 
 char curdir[PATH_SIZE];
 char checkdir[PATH_SIZE];
@@ -39,13 +36,11 @@ char filesdir[PATH_SIZE];//backup deleting file
 char infodir[PATH_SIZE];//backup deleting file
 
 typedef struct _list{//trash dir의 파일리스트
-    // char listfname[PATH_SIZE];
     int size;
     struct _list *next;
 }List;
 
 typedef struct _node{//recover l option 
-    //char filesdir[PATH_SIZE];
     char listfpath[PATH_SIZE];
     char listfname[FILE_SIZE];
     char dtime[TM_SIZE];
@@ -77,8 +72,7 @@ typedef struct _cnode{//SIZE TREE
     struct _cnode *next;
 }CNode;
 CNode * chead;
-/////////////////////////////////////////////////////////////////////////////////////////
-//파일정보를 링크드리스트(연결리스트)에 전역변수로 저장.
+//모니터링 파일정보를 링크드리스트(연결리스트)에 전역변수로 저장.
 typedef struct MNode{//연결리스트의 노드 구조체
     struct MNode *next;//다음 노드의 주소를 저장할 포인터
     char listfname[FILE_SIZE];
@@ -111,53 +105,48 @@ typedef struct fList{//연결리스트의 노드 구조체
     struct fList *prev;
 }fList;
 
-
-//static int indent=1;//깊이를 체크하는 변수
 char cdir[256];//파일경로 저장
 
-//void scandirlog(char *scanningdir);
-void getting_time_of_day(char *wdir,char *mondir);
-void ssu_runtime(struct timeval *begin_t, struct timeval *end_t);
-void startdemon(char *curdir,char *checkdir);
-void forlogtxt(void);
-int scanmondirBASE(char *searchdir,int inityes);
-int scanmondirNEW(char *searchdir,int inityes);
-void write_logtxt(char *fname, char *status,char *mtimeifmod);
-void get_time(char *str,char *status);
-int list_search(char *cmpfname,int searchisbase);
-int is_modified(char *cmpmtime,int cmpinum,char *cmpfname);
+void ssu_runtime(struct timeval *begin_t, struct timeval *end_t);//프로그램실행시간 
+void startdemon(char *curdir,char *checkdir);//데몬프로그램 시작 
+void forlogtxt(void);//base스캔과 new스캔을 상태비교해서 로그파일입출력.
+int scanmondirBASE(char *searchdir,int inityes);//base스캔 처음에 하고, 업데이트있을때만 호출
+int scanmondirNEW(char *searchdir,int inityes);//new스캔 1초마다 forlogtxt()와 함께 호출됨.
+void write_logtxt(char *fname, char *status,char *mtimeifmod);//파일입출력 
+void get_time(char *str,char *status);//시간 계산 
+int list_search(char *cmpfname,int searchisbase);//연결리스트에 존재하는지(create,delete)
+int is_modified(char *cmpmtime,int cmpinum,char *cmpfname);//mtime과 파일이름비교(modify)
 void list_print1(int bnodeyes);
-void free_list(MNode* mhead);
+void free_list(MNode* mhead);//연결리스트 초기화 
 
 int list_search_CNode(char *cmpfname);//checkdir에 존재하는 파일인지 확인.
-void list_insert(Node *newNode);//list에 node추가
-void Clist_insert(CNode *newNode);//list에 node추가
-void Mlist_insert(MNode *newNode);
-void Mnlist_insert(MnNode *newNode);
-void list_sort(int (*cmp)());
-void list_sortC(int (*cmp)());
-void list_print();
+int path_search_CNode(char *cmpfpath);//checkdir에 존재하는 path인지 확인.
+void list_insert(Node *newNode);//trashdir list에 node추가
+void Clist_insert(CNode *newNode);//checkdir list에 node추가
+void Mlist_insert(MNode *newNode);//모니터링 base스캔 list에 node추가
+void Mnlist_insert(MnNode *newNode);//모니터링 new스캔 list에 node추가 
+void list_sort(int (*cmp)());//trashdir 오름차순 정렬 
+void list_sortC(int (*cmp)());//checkdir 오름차순 정렬 
+void list_print();//recover -l option 삭제시간 오름차순으로 표준출력 
 void swap_node_data(Node *, Node *);
-int optldt_cmp(Node *a, Node *b);
+int optldt_cmp(Node *a, Node *b);//삭제시간오름차순정렬 
 int str_cmp(CNode *, CNode *);
 int str_cmp_dtimestr(Node *a,Node *b);
 
-
-void ssu_mntr_play(void);
-int check_opt(const char *str);
+void ssu_mntr_play(void);//프롬프트 입력 
+int check_opt(const char *str);//프롬프트 명령어 확인 
 int get_deleteOpt(char *str);//DELETE [FILENAME] [ENDTIME] [OPTION]
-void deloptR_alarm(int k);
+void deloptR_alarm(int k);//삭제시간에 시그널호출하는 시그널핸들러함수 
 int do_deleteOpt(void);//DELETE [FILENAME] [ENDTIME] [OPTION]
-int info_sizing(void);
-void relPtoFile(char *onlyfname,char *relPFile,char *ch);
+int info_sizing(void);//info사이즈 2KB넘는지 확인 
+void relPtoFile(char *onlyfname,char *relPFile,char *ch);//특정문자열 파싱하는 함수 
 int do_sizeOpt(char *str);//SIZE [FILENAME] [OPTION]
-void makeRelativeP(char *absolutepath, char *relativepath, char *curdir);
-void do_sizeOptDIR(char *dirname);
-int do_recoverOpt(char *str);
-int do_treeOpt(char *str);
-int do_helpOpt(char *str);
-void scanningTdir(char *scanningdir);//,int inityes);
-void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *delcurdir);//,static int indent);//,int indent);
-
-
+int delEchar(char *buf, char *a);//문자열에서 특정문자열 제거.(뒤에서부터)
+void makeRelativeP(char *absolutepath, char *relativepath, char *curdir);//상대경로로
+int do_recoverOpt(char *str);//RECOVER [FILENAME] [OPTION]
+int do_treeOpt(char *str);//TREE
+int do_helpOpt(char *str);//HELP
+void scanningTdir(char *scanningdir);//trashdir스캔 
+//checkdir(지정디렉토리) 스캔 
+void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char *delcurdir);
 

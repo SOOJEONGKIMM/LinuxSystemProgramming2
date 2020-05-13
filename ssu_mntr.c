@@ -299,11 +299,12 @@ void deloptR_alarm(int k){
     char recheckbuf[OPT_SIZE];
     printf("alarm ringing\n");
     //vfork 생성 (자식/부모프로세스에서 삭제작업 진행)
-    switch(pid=fork()){
+    switch(pid=vfork()){
 	case 0:
 	    //printf("I'm child. My PID is %d\n",getpid());
 	    if(deloptR==1){//do_deleteOpt()호출 전 재확인 문구
 		while(1){
+printf("onlyfname:%s\n",onlyfname);
 		    printf("Delete [y/n]?");
 		    memset(recheckbuf,0,OPT_SIZE);
 		    fgets(recheckbuf,OPT_SIZE,stdin);
@@ -391,10 +392,18 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
     memset(relPFile,0,PATH_SIZE);
     memset(abPFile,0,PATH_SIZE);
     memset(tmp2,0,PATH_SIZE);
-    if(strstr(onlyfname,"/")!=0){//relative path
+    if(strstr(onlyfname,"/")!=0){//relative or absolute path
+	if(strstr(onlyfname,"./")==0){//absolute path
+	    if(path_search_CNode(onlyfname)==0){
+		printf("path is wrong\n");
+		gettimeofday(&end_t,NULL);
+		ssu_runtime(&begin_t, &end_t);
+		chdir(curdir);
+		return 0;
+	    }
+	}
 	char *tmp1=strrchr(onlyfname,'/');
 	relPtoFile(tmp1,tmp2,"/");
-	//memset(onlyfname,0,PATH_SIZE);
 	memset(onlyfname,0,PATH_SIZE);
 	strcpy(onlyfname,tmp2);
     }
@@ -406,7 +415,8 @@ int do_deleteOpt(void){//DELETE [FILENAME] [ENDTIME] [OPTION]
 	endtimeExist=0;//init
 	gettimeofday(&end_t,NULL);
 	ssu_runtime(&begin_t, &end_t);
-	ssu_mntr_play();
+	chdir(curdir);
+	return 0;
     }
 
     CNode *searchnode;//존재하는 파일이니 경로를 가져옴. 
@@ -1424,6 +1434,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
     static int indent;
     static int dcnt;
     static int depthcnt;//recursive num
+    int filefirst=0;
     if(indentinit==1){
 	indent=0;//처음으로 스캔시작할때만 초기화되도록 
 	chead=NULL;
@@ -1535,6 +1546,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 	    strcpy(node->relP,relativepath);
 	    sprintf(treefname,"-%s",node->listfname);
 
+	    filefirst=1;
 	    if(sizeoptflag==TREE){
 		if(fcnt==countdirp-2){
 		    printf("|%-15s\n",treefname);
@@ -1605,7 +1617,7 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
 			for(int i=0;i<14-strlen(node->listdname);i++){
 			    sprintf(treefname,"%s-",treefname);
 			}
-			if(indent==1&&dcnt!=1){
+			if(indent==1&&filefirst==1){
 			    printf("%15s", "");
 			}
 			printf("|%-15s",treefname);
@@ -1624,7 +1636,6 @@ void scanningCdir(char *searchdir,int depth,int sizeoptflag,int indentinit,char 
     }
     indent--;
     chdir("..");
-    //printf("-------------------------scanning dir for CNode list ends\n");
 }
 int list_search_CNode(char *cmpfname){//checkdir에 존재하는 파일인지 확인.
     CNode *searchnode;
@@ -1634,6 +1645,19 @@ int list_search_CNode(char *cmpfname){//checkdir에 존재하는 파일인지 �
 	if(!strcmp(searchnode->listfname,cmpfname))
 	    return 1;//existing file.
 	if(!strcmp(searchnode->listdname,cmpfname))
+	    return 2;//existing directory.
+	searchnode=searchnode->next;
+    }
+    return 0;//not existing file.
+}
+int path_search_CNode(char *cmpfpath){//checkdir에 존재하는 파일인지 확인.
+    CNode *searchnode;
+    searchnode=chead;
+    while(searchnode){
+	//	printf("searching name:%s d:%s\n",searchnode->listfname,searchnode->listdname);
+	if(!strcmp(searchnode->listfname,cmpfpath))
+	    return 1;//existing file.
+	if(!strcmp(searchnode->listdname,cmpfpath))
 	    return 2;//existing directory.
 	searchnode=searchnode->next;
     }

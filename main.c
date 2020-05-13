@@ -436,7 +436,7 @@ int scanmondirBASE(char *searchdir,int inityes){
 	}
 	get_time(timestr,status);//current time
 	fseek(fp,0,SEEK_END);
-	fprintf(fp,"%s [%s _%s]\n",timestr,fname,status);
+	fprintf(fp,"%s [%s _%s]\n",timestr,status,fname);
 	fclose(fp);
     }
     int list_search(char *cmpfname,int searchisbase){
